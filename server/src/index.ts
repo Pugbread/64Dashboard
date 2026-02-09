@@ -53,6 +53,8 @@ async function retry<T>(fn: () => Promise<T>, retries: number, delayMs: number):
 
 // Start server
 async function start() {
+  console.log('DATABASE_URL host:', config.databaseUrl.replace(/\/\/[^@]+@/, '//***@'));
+
   // Start listening immediately so healthcheck passes
   app.listen(config.port, '0.0.0.0', () => {
     console.log(`Server running on 0.0.0.0:${config.port}`);
@@ -60,10 +62,13 @@ async function start() {
 
   // Run migrations with retries (DB may take a moment to be ready)
   try {
-    await retry(() => runMigrations(pool), 10, 5000);
+    await retry(async () => {
+      console.log('Attempting database connection...');
+      await runMigrations(pool);
+    }, 10, 5000);
     console.log('Database migrations complete');
-  } catch (error) {
-    console.error('Migration failed after retries:', error);
+  } catch (error: any) {
+    console.error('Migration failed after retries:', error.message, error.code);
   }
 }
 

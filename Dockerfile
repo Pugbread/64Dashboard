@@ -16,8 +16,8 @@ RUN npm ci
 COPY server/ ./
 RUN npm run build
 
-# Stage 3: Production image
-FROM node:20-alpine
+# Stage 3: Production image (using slim instead of alpine for better DNS/networking compatibility)
+FROM node:20-slim
 WORKDIR /app
 
 # Copy server production deps
