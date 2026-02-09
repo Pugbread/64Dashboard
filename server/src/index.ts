@@ -42,9 +42,9 @@ async function retry<T>(fn: () => Promise<T>, retries: number, delayMs: number):
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
-    } catch (error) {
+    } catch (error: any) {
       if (i === retries - 1) throw error;
-      console.log(`Attempt ${i + 1} failed, retrying in ${delayMs / 1000}s...`);
+      console.log(`Attempt ${i + 1} failed: ${error.message} (code: ${error.code}), retrying in ${delayMs / 1000}s...`);
       await new Promise((r) => setTimeout(r, delayMs));
     }
   }
