@@ -56,20 +56,28 @@ async function start() {
   const dbUrl = config.databaseUrl;
   console.log('DATABASE_URL host:', dbUrl.replace(/\/\/[^@]+@/, '//***@'));
 
-  // DNS debug
-  const dns = await import('dns');
-  const hostname = new URL(dbUrl).hostname;
-  console.log('Resolving hostname:', hostname);
-  try {
-    const addrs4 = await dns.promises.resolve4(hostname).catch(() => []);
-    const addrs6 = await dns.promises.resolve6(hostname).catch(() => []);
-    const lookup = await dns.promises.lookup(hostname).catch((e: any) => e.message);
-    console.log('DNS IPv4:', addrs4);
-    console.log('DNS IPv6:', addrs6);
-    console.log('DNS lookup:', lookup);
-  } catch (e: any) {
-    console.log('DNS error:', e.message);
-  }
+  // Network debug
+  const net = await import('net');
+  const url = new URL(dbUrl);
+  const testHost = url.hostname;
+  const testPort = parseInt(url.port || '5432');
+  console.log(`TCP test to ${testHost}:${testPort}...`);
+  await new Promise<void>((resolve) => {
+    const sock = net.connect(testPort, testHost, () => {
+      console.log('TCP connect SUCCESS');
+      sock.destroy();
+      resolve();
+    });
+    sock.on('error', (e: any) => {
+      console.log('TCP connect FAILED:', e.message);
+      resolve();
+    });
+    sock.setTimeout(10000, () => {
+      console.log('TCP connect TIMEOUT');
+      sock.destroy();
+      resolve();
+    });
+  });
 
   // Start listening immediately so healthcheck passes
   app.listen(config.port, '0.0.0.0', () => {
