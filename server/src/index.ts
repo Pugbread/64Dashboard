@@ -37,20 +37,34 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(clientPath, 'index.html'));
 });
 
+// Retry helper
+async function retry<T>(fn: () => Promise<T>, retries: number, delayMs: number): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      console.log(`Attempt ${i + 1} failed, retrying in ${delayMs / 1000}s...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error('Unreachable');
+}
+
 // Start server
 async function start() {
-  try {
-    // Run database migrations
-    await runMigrations(pool);
-    console.log('Database migrations complete');
-  } catch (error) {
-    console.error('Migration error (non-fatal, will retry on next request):', error);
-  }
-
+  // Start listening immediately so healthcheck passes
   app.listen(config.port, '0.0.0.0', () => {
     console.log(`Server running on 0.0.0.0:${config.port}`);
-    console.log(`Dashboard: http://localhost:${config.port}`);
   });
+
+  // Run migrations with retries (DB may take a moment to be ready)
+  try {
+    await retry(() => runMigrations(pool), 5, 3000);
+    console.log('Database migrations complete');
+  } catch (error) {
+    console.error('Migration failed after retries:', error);
+  }
 }
 
 start();
