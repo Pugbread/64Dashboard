@@ -43,15 +43,14 @@ async function start() {
     // Run database migrations
     await runMigrations(pool);
     console.log('Database migrations complete');
-
-    app.listen(config.port, () => {
-      console.log(`Server running on port ${config.port}`);
-      console.log(`Dashboard: http://localhost:${config.port}`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Migration error (non-fatal, will retry on next request):', error);
   }
+
+  app.listen(config.port, '0.0.0.0', () => {
+    console.log(`Server running on 0.0.0.0:${config.port}`);
+    console.log(`Dashboard: http://localhost:${config.port}`);
+  });
 }
 
 start();
