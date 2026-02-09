@@ -60,7 +60,7 @@ async function start() {
 
   // Run migrations with retries (DB may take a moment to be ready)
   try {
-    await retry(() => runMigrations(pool), 5, 3000);
+    await retry(() => runMigrations(pool), 10, 5000);
     console.log('Database migrations complete');
   } catch (error) {
     console.error('Migration failed after retries:', error);

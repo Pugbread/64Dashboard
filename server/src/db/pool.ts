@@ -5,7 +5,10 @@ export const pool = new Pool({
   connectionString: config.databaseUrl,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 30000,
+  ssl: config.databaseUrl.includes('railway.internal')
+    ? false
+    : { rejectUnauthorized: false },
 });
 
 pool.on('error', (err) => {
