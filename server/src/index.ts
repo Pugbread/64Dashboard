@@ -53,7 +53,23 @@ async function retry<T>(fn: () => Promise<T>, retries: number, delayMs: number):
 
 // Start server
 async function start() {
-  console.log('DATABASE_URL host:', config.databaseUrl.replace(/\/\/[^@]+@/, '//***@'));
+  const dbUrl = config.databaseUrl;
+  console.log('DATABASE_URL host:', dbUrl.replace(/\/\/[^@]+@/, '//***@'));
+
+  // DNS debug
+  const dns = await import('dns');
+  const hostname = new URL(dbUrl).hostname;
+  console.log('Resolving hostname:', hostname);
+  try {
+    const addrs4 = await dns.promises.resolve4(hostname).catch(() => []);
+    const addrs6 = await dns.promises.resolve6(hostname).catch(() => []);
+    const lookup = await dns.promises.lookup(hostname).catch((e: any) => e.message);
+    console.log('DNS IPv4:', addrs4);
+    console.log('DNS IPv6:', addrs6);
+    console.log('DNS lookup:', lookup);
+  } catch (e: any) {
+    console.log('DNS error:', e.message);
+  }
 
   // Start listening immediately so healthcheck passes
   app.listen(config.port, '0.0.0.0', () => {
