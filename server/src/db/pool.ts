@@ -2,8 +2,8 @@ import { Pool } from 'pg';
 import dns from 'dns';
 import { config } from '../config';
 
-// Railway internal networking uses IPv6 - prefer IPv4 first to avoid issues
-dns.setDefaultResultOrder('ipv4first');
+// Railway internal networking uses IPv6
+dns.setDefaultResultOrder('verbatim');
 
 export const pool = new Pool({
   connectionString: config.databaseUrl,
