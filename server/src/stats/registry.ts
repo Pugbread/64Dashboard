@@ -7,6 +7,7 @@ import { avgPlaytimeProvider } from './providers/avgPlaytime';
 import { avgJoinsProvider } from './providers/avgJoins';
 import { revenueProvider } from './providers/revenue';
 import { arpuProvider } from './providers/arpu';
+import { d1RetentionProvider } from './providers/d1Retention';
 
 class StatRegistry {
   private providers: Map<string, StatProvider> = new Map();
@@ -81,3 +82,4 @@ registry.register(avgPlaytimeProvider);
 registry.register(avgJoinsProvider);
 registry.register(revenueProvider);
 registry.register(arpuProvider);
+registry.register(d1RetentionProvider);

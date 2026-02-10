@@ -18,7 +18,7 @@ interface TimeSeriesChartProps {
 const CATEGORY_STROKES: Record<string, string> = {
   engagement: '#FFFFFF',
   revenue: '#22C55E',
-  retention: '#888888',
+  retention: '#F59E0B',
 };
 
 function formatTick(dateStr: string, interval: string): string {
