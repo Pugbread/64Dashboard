@@ -33,7 +33,7 @@ export default function Login({ onLogin }: LoginProps) {
           <div className="w-12 h-12 rounded-[4px] bg-white mx-auto mb-4 flex items-center justify-center">
             <BarChart3 size={20} className="text-black" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">64Dashboard</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">64's Dash</h1>
           <p className="text-text-muted text-sm mt-1">Roblox Analytics</p>
         </div>
 

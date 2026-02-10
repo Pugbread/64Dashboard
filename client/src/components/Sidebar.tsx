@@ -42,7 +42,7 @@ export default function Sidebar({ categories, onLogout }: SidebarProps) {
           <div className="w-7 h-7 rounded-[3px] bg-white flex items-center justify-center">
             <BarChart3 size={14} className="text-black" />
           </div>
-          <h1 className="text-[14px] font-bold text-white tracking-tight">64Dashboard</h1>
+          <h1 className="text-[14px] font-bold text-white tracking-tight">64's Dash</h1>
         </div>
       </div>
 
