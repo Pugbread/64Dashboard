@@ -2,7 +2,7 @@ import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 
 interface Props {
-  onAdd: (name: string, iconUrl?: string, universeId?: string) => Promise<void>;
+  onAdd: (name: string, universeId?: string, iconUrl?: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -16,7 +16,7 @@ export default function AddGameModal({ onAdd, onClose }: Props) {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
-    await onAdd(name.trim(), iconUrl.trim() || undefined, universeId.trim() || undefined);
+    await onAdd(name.trim(), universeId.trim() || undefined, iconUrl.trim() || undefined);
     setLoading(false);
     onClose();
   };
