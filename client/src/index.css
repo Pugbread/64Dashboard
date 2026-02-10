@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,9 +10,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  body {
+    background: #000000;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -18,11 +25,81 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: #2D2D2D;
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: #3D3D3D;
+  }
+
+  /* Custom selection color */
+  ::selection {
+    background: rgba(142, 84, 233, 0.3);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-card border border-border rounded-card relative overflow-hidden;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(145deg, rgba(142, 84, 233, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+
+  .card-hover:hover {
+    border-color: rgba(142, 84, 233, 0.25);
+    box-shadow: 0 0 30px rgba(142, 84, 233, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .pill-success {
+    @apply pill bg-status-success-bg text-status-success;
+  }
+
+  .pill-error {
+    @apply pill bg-status-error-bg text-status-error;
+  }
+
+  .glow-dot {
+    @apply w-2 h-2 rounded-full;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200;
+    background: linear-gradient(135deg, #8E54E9 0%, #6C3BBF 100%);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 25px rgba(142, 84, 233, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .input-field {
+    @apply w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-white text-sm
+           focus:outline-none focus:border-accent-purple/50 focus:ring-1 focus:ring-accent-purple/20
+           placeholder-text-muted transition-colors;
   }
 }

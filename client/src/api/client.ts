@@ -2,21 +2,15 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT token to every request if available
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Handle 401 responses
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -36,17 +30,12 @@ export const login = (password: string) =>
 
 // Games
 export const getGames = () => api.get('/games');
-export const addGame = (name: string, iconUrl?: string) =>
-  api.post('/games', { name, iconUrl });
+export const addGame = (name: string, universeId?: string, iconUrl?: string) =>
+  api.post('/games', { name, universeId, iconUrl });
 export const deleteGame = (id: string) => api.delete(`/games/${id}`);
 
 // Stats
 export const getStats = (gameId: string, range: string, metrics?: string[]) =>
-  api.get(`/stats/${gameId}`, {
-    params: {
-      range,
-      metrics: metrics?.join(','),
-    },
-  });
+  api.get(`/stats/${gameId}`, { params: { range, metrics: metrics?.join(',') } });
 
 export const getProviders = () => api.get('/stats/providers');

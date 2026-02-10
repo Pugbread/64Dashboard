@@ -21,15 +21,11 @@ export default function App() {
     navigate('/login');
   };
 
-  // Check token validity on mount
   useEffect(() => {
     if (token) {
       try {
-        // Decode JWT to check expiration
         const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.exp * 1000 < Date.now()) {
-          handleLogout();
-        }
+        if (payload.exp * 1000 < Date.now()) handleLogout();
       } catch {
         handleLogout();
       }
@@ -46,9 +42,12 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-950">
+    <div className="min-h-screen bg-bg-primary relative">
+      {/* Global atmosphere glow */}
+      <div className="fixed top-0 left-[240px] right-0 h-[400px] bg-gradient-page pointer-events-none z-0" />
+
       <Sidebar onLogout={handleLogout} />
-      <main className="ml-64 p-8">
+      <main className="ml-[240px] p-8 relative z-10">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/games" element={<Games />} />

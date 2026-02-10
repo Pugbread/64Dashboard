@@ -7,7 +7,7 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, name, icon_url, created_at FROM games ORDER BY created_at DESC'
+      'SELECT id, name, universe_id, icon_url, created_at FROM games ORDER BY created_at DESC'
     );
     res.json(rows);
   } catch (error) {
@@ -19,16 +19,31 @@ router.get('/', async (_req: Request, res: Response) => {
 // POST /api/games - Add a game
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, iconUrl } = req.body;
+    const { name, universeId, iconUrl } = req.body;
 
     if (!name) {
       res.status(400).json({ error: 'Game name is required' });
       return;
     }
 
+    // If universeId provided, try to fetch icon from Roblox
+    let finalIconUrl = iconUrl || null;
+    if (universeId && !finalIconUrl) {
+      try {
+        const apiUrl = `https://thumbnails.roblox.com/v1/games/icons?universeIds=${universeId}&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false`;
+        const response = await fetch(apiUrl);
+        const data: any = await response.json();
+        if (data?.data?.[0]?.imageUrl) {
+          finalIconUrl = data.data[0].imageUrl;
+        }
+      } catch {
+        // Ignore icon fetch errors
+      }
+    }
+
     const { rows } = await pool.query(
-      'INSERT INTO games (name, icon_url) VALUES ($1, $2) RETURNING id, name, icon_url, created_at',
-      [name, iconUrl || null]
+      'INSERT INTO games (name, universe_id, icon_url) VALUES ($1, $2, $3) RETURNING id, name, universe_id, icon_url, created_at',
+      [name, universeId || null, finalIconUrl]
     );
 
     res.status(201).json(rows[0]);

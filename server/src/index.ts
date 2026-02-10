@@ -10,6 +10,7 @@ import authRoutes from './routes/auth';
 import gamesRoutes from './routes/games';
 import eventsRoutes from './routes/events';
 import statsRoutes from './routes/stats';
+import proxyRoutes from './routes/proxy';
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/games', adminAuth, gamesRoutes);
 app.use('/api/events', apiKeyAuth, eventsRoutes);
 app.use('/api/stats', adminAuth, statsRoutes);
+app.use('/api/proxy', proxyRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

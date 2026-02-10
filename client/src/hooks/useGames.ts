@@ -4,6 +4,7 @@ import { getGames, addGame as addGameApi, deleteGame as deleteGameApi } from '..
 export interface Game {
   id: string;
   name: string;
+  universe_id: string | null;
   icon_url: string | null;
   created_at: string;
 }
@@ -26,8 +27,8 @@ export function useGames() {
     }
   }, []);
 
-  const addGame = useCallback(async (name: string, iconUrl?: string) => {
-    const { data } = await addGameApi(name, iconUrl);
+  const addGame = useCallback(async (name: string, universeId?: string, iconUrl?: string) => {
+    const { data } = await addGameApi(name, universeId, iconUrl);
     setGames((prev) => [data, ...prev]);
     return data;
   }, []);

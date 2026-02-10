@@ -9,6 +9,7 @@ const migrations = [
       CREATE TABLE IF NOT EXISTS games (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
+        universe_id TEXT,
         icon_url TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
@@ -52,6 +53,12 @@ const migrations = [
         name TEXT PRIMARY KEY,
         applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+    `,
+  },
+  {
+    name: '002_add_universe_id',
+    sql: `
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS universe_id TEXT;
     `,
   },
 ];

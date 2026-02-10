@@ -8,12 +8,14 @@ interface GameSelectorProps {
 }
 
 export default function GameSelector({ games, selectedGameId, onSelect }: GameSelectorProps) {
+  const selected = games.find((g) => g.id === selectedGameId);
+
   return (
     <div className="relative">
       <select
         value={selectedGameId || ''}
         onChange={(e) => onSelect(e.target.value)}
-        className="appearance-none bg-surface-800 border border-surface-700 text-white text-sm rounded-lg px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent cursor-pointer min-w-[200px]"
+        className="appearance-none bg-bg-card border border-border rounded-xl px-4 py-2.5 pr-10 text-white text-sm font-medium focus:outline-none focus:border-accent-purple/50 focus:ring-1 focus:ring-accent-purple/20 cursor-pointer min-w-[220px] transition-colors"
       >
         <option value="" disabled>
           Select a game
@@ -25,8 +27,8 @@ export default function GameSelector({ games, selectedGameId, onSelect }: GameSe
         ))}
       </select>
       <ChevronDown
-        size={16}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none"
+        size={14}
+        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
       />
     </div>
   );
