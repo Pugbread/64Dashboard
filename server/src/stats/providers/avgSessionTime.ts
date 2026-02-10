@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { StatProvider, TimeSeriesResult } from '../types';
+import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate } from '../types';
 
 export const avgSessionTimeProvider: StatProvider = {
   id: 'avg_session_time',
@@ -9,14 +9,15 @@ export const avgSessionTimeProvider: StatProvider = {
   unit: 'min',
   format: 'duration',
 
-  async query(pool: Pool, gameId: string, from: Date, to: Date): Promise<TimeSeriesResult> {
+  async query(pool: Pool, gameId: string, from: Date, to: Date, interval: Interval = 'daily'): Promise<TimeSeriesResult> {
+    const trunc = intervalTrunc('started_at', interval);
     const { rows } = await pool.query(
       `SELECT 
-        DATE(started_at) as date,
+        ${trunc} as date,
         AVG(EXTRACT(EPOCH FROM (COALESCE(ended_at, NOW()) - started_at)) / 60.0) as value
       FROM sessions
       WHERE game_id = $1 AND started_at >= $2 AND started_at < $3
-      GROUP BY DATE(started_at)
+      GROUP BY ${trunc}
       ORDER BY date ASC`,
       [gameId, from.toISOString(), to.toISOString()]
     );
@@ -24,7 +25,7 @@ export const avgSessionTimeProvider: StatProvider = {
     return {
       type: 'timeseries',
       data: rows.map((r) => ({
-        date: r.date.toISOString().split('T')[0],
+        date: formatRowDate(r.date, interval),
         value: Math.round(Number(r.value) * 100) / 100,
       })),
     };

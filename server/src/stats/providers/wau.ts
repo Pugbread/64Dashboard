@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { StatProvider, ScalarResult } from '../types';
+import { StatProvider, ScalarResult, Interval } from '../types';
 
 export const wauProvider: StatProvider = {
   id: 'wau',
@@ -8,8 +8,7 @@ export const wauProvider: StatProvider = {
   resultType: 'scalar',
   format: 'number',
 
-  async query(pool: Pool, gameId: string, from: Date, to: Date): Promise<ScalarResult> {
-    // Current period
+  async query(pool: Pool, gameId: string, from: Date, to: Date, _interval?: Interval): Promise<ScalarResult> {
     const { rows } = await pool.query(
       `SELECT COUNT(DISTINCT player_id) as value
        FROM sessions
@@ -17,7 +16,6 @@ export const wauProvider: StatProvider = {
       [gameId, from.toISOString(), to.toISOString()]
     );
 
-    // Previous period (same duration, shifted back)
     const duration = to.getTime() - from.getTime();
     const prevFrom = new Date(from.getTime() - duration);
     const prevTo = from;

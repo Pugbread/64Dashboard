@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { StatProvider, ScalarResult } from '../types';
+import { StatProvider, ScalarResult, Interval } from '../types';
 
 export const mauProvider: StatProvider = {
   id: 'mau',
@@ -8,7 +8,7 @@ export const mauProvider: StatProvider = {
   resultType: 'scalar',
   format: 'number',
 
-  async query(pool: Pool, gameId: string, from: Date, to: Date): Promise<ScalarResult> {
+  async query(pool: Pool, gameId: string, from: Date, to: Date, _interval?: Interval): Promise<ScalarResult> {
     const { rows } = await pool.query(
       `SELECT COUNT(DISTINCT player_id) as value
        FROM sessions

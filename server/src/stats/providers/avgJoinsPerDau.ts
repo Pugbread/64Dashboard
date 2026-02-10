@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { StatProvider, TimeSeriesResult } from '../types';
+import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate } from '../types';
 
 export const avgJoinsPerDauProvider: StatProvider = {
   id: 'avg_joins_per_dau',
@@ -8,15 +8,15 @@ export const avgJoinsPerDauProvider: StatProvider = {
   resultType: 'timeseries',
   format: 'number',
 
-  async query(pool: Pool, gameId: string, from: Date, to: Date): Promise<TimeSeriesResult> {
-    // Total sessions per day divided by unique players per day
+  async query(pool: Pool, gameId: string, from: Date, to: Date, interval: Interval = 'daily'): Promise<TimeSeriesResult> {
+    const trunc = intervalTrunc('started_at', interval);
     const { rows } = await pool.query(
       `SELECT 
-        DATE(started_at) as date,
+        ${trunc} as date,
         COUNT(*)::FLOAT / NULLIF(COUNT(DISTINCT player_id), 0) as value
       FROM sessions
       WHERE game_id = $1 AND started_at >= $2 AND started_at < $3
-      GROUP BY DATE(started_at)
+      GROUP BY ${trunc}
       ORDER BY date ASC`,
       [gameId, from.toISOString(), to.toISOString()]
     );
@@ -24,7 +24,7 @@ export const avgJoinsPerDauProvider: StatProvider = {
     return {
       type: 'timeseries',
       data: rows.map((r) => ({
-        date: r.date.toISOString().split('T')[0],
+        date: formatRowDate(r.date, interval),
         value: Math.round(Number(r.value || 0) * 100) / 100,
       })),
     };

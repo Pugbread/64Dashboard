@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { StatProvider, StatResult } from './types';
+import { StatProvider, StatResult, Interval } from './types';
 
 // Import all providers
 import { dauProvider } from './providers/dau';
@@ -28,6 +28,19 @@ class StatRegistry {
 
   getProvidersByCategory(category: string): StatProvider[] {
     return this.getAllProviders().filter((p) => p.category === category);
+  }
+
+  /** Get all unique categories in registration order */
+  getCategories(): string[] {
+    const seen = new Set<string>();
+    const categories: string[] = [];
+    for (const p of this.providers.values()) {
+      if (!seen.has(p.category)) {
+        seen.add(p.category);
+        categories.push(p.category);
+      }
+    }
+    return categories;
   }
 
   getProviderIds(): string[] {
@@ -59,7 +72,8 @@ class StatRegistry {
     gameId: string,
     from: Date,
     to: Date,
-    metricIds?: string[]
+    metricIds?: string[],
+    interval?: Interval
   ): Promise<Record<string, StatResult>> {
     const providers = metricIds
       ? metricIds.map((id) => this.providers.get(id)).filter(Boolean) as StatProvider[]
@@ -68,7 +82,7 @@ class StatRegistry {
     const results = await Promise.all(
       providers.map(async (provider) => {
         try {
-          const result = await provider.query(pool, gameId, from, to);
+          const result = await provider.query(pool, gameId, from, to, interval);
           return { id: provider.id, result };
         } catch (error) {
           console.error(`Error querying stat provider ${provider.id}:`, error);

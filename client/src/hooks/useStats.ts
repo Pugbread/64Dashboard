@@ -31,13 +31,15 @@ export interface ProviderMeta {
 export interface StatsResponse {
   gameId: string;
   range: string;
+  interval: string;
   from: string;
   to: string;
   metrics: Record<string, StatResult>;
   providers: ProviderMeta[];
+  categories: string[];
 }
 
-export function useStats(gameId: string | null, range: string) {
+export function useStats(gameId: string | null, range: string, interval: string = 'daily') {
   const [data, setData] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function useStats(gameId: string | null, range: string) {
 
     try {
       setLoading(true);
-      const { data: stats } = await getStats(gameId, range);
+      const { data: stats } = await getStats(gameId, range, interval);
       setData(stats);
       setError(null);
     } catch (err: any) {
@@ -55,7 +57,7 @@ export function useStats(gameId: string | null, range: string) {
     } finally {
       setLoading(false);
     }
-  }, [gameId, range]);
+  }, [gameId, range, interval]);
 
   useEffect(() => {
     fetchStats();

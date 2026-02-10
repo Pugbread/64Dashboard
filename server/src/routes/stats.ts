@@ -1,12 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db/pool';
 import { registry } from '../stats/registry';
+import { Interval } from '../stats/types';
 
 const router = Router();
 
+const VALID_INTERVALS: Interval[] = ['hourly', 'daily', 'weekly'];
+
 // GET /api/stats/providers - List available stat providers
 router.get('/providers', (_req: Request, res: Response) => {
-  res.json(registry.getProviderMeta());
+  res.json({
+    providers: registry.getProviderMeta(),
+    categories: registry.getCategories(),
+  });
 });
 
 // GET /api/stats/:gameId - Get stats for a game
@@ -15,6 +21,10 @@ router.get('/:gameId', async (req: Request, res: Response) => {
     const gameId = req.params.gameId as string;
     const range = String(req.query.range || '7d');
     const metricsRaw = req.query.metrics ? String(req.query.metrics) : undefined;
+    const intervalRaw = String(req.query.interval || 'daily');
+    const interval: Interval = VALID_INTERVALS.includes(intervalRaw as Interval)
+      ? (intervalRaw as Interval)
+      : 'daily';
 
     // Parse time range
     const now = new Date();
@@ -37,7 +47,6 @@ router.get('/:gameId', async (req: Request, res: Response) => {
         from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
         break;
       default:
-        // Default to 7 days
         from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
 
@@ -57,15 +66,17 @@ router.get('/:gameId', async (req: Request, res: Response) => {
       return;
     }
 
-    const results = await registry.queryMultiple(pool, gameId, from, to, metricIds);
+    const results = await registry.queryMultiple(pool, gameId, from, to, metricIds, interval);
 
     res.json({
       gameId,
       range: range || '7d',
+      interval,
       from: from.toISOString(),
       to: to.toISOString(),
       metrics: results,
       providers: registry.getProviderMeta(),
+      categories: registry.getCategories(),
     });
   } catch (error) {
     console.error('Error fetching stats:', error);

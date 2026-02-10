@@ -35,7 +35,7 @@ export const addGame = (name: string, universeId?: string, iconUrl?: string) =>
 export const deleteGame = (id: string) => api.delete(`/games/${id}`);
 
 // Stats
-export const getStats = (gameId: string, range: string, metrics?: string[]) =>
-  api.get(`/stats/${gameId}`, { params: { range, metrics: metrics?.join(',') } });
+export const getStats = (gameId: string, range: string, interval?: string, metrics?: string[]) =>
+  api.get(`/stats/${gameId}`, { params: { range, interval, metrics: metrics?.join(',') } });
 
 export const getProviders = () => api.get('/stats/providers');
