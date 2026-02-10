@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate } from '../types';
+import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate, INTERVAL_SECONDS } from '../types';
 
 export const avgSessionTimeProvider: StatProvider = {
   id: 'avg_session_time',
@@ -10,8 +10,13 @@ export const avgSessionTimeProvider: StatProvider = {
 
   async query(pool: Pool, gameId: string, from: Date, to: Date, interval: Interval): Promise<TimeSeriesResult> {
     const trunc = intervalTrunc('started_at', interval);
-    // Only count COMPLETED sessions (ended_at IS NOT NULL) so
-    // open sessions don't inflate past data points over time.
+
+    // Compute the start of the current (incomplete) bucket so we can
+    // exclude it — partial buckets have artificially low averages because
+    // only very short completed sessions exist in them yet.
+    const secs = INTERVAL_SECONDS[interval];
+    const currentBucketStart = new Date(Math.floor(Date.now() / (secs * 1000)) * secs * 1000);
+
     const { rows } = await pool.query(
       `SELECT ${trunc} as bucket,
               AVG(EXTRACT(EPOCH FROM (ended_at - started_at)) / 60.0) as value
@@ -19,8 +24,10 @@ export const avgSessionTimeProvider: StatProvider = {
        WHERE game_id = $1
          AND started_at >= $2 AND started_at < $3
          AND ended_at IS NOT NULL
-       GROUP BY bucket ORDER BY bucket ASC`,
-      [gameId, from.toISOString(), to.toISOString()]
+       GROUP BY bucket
+       HAVING ${trunc} < $4
+       ORDER BY bucket ASC`,
+      [gameId, from.toISOString(), to.toISOString(), currentBucketStart.toISOString()]
     );
     return {
       type: 'timeseries',

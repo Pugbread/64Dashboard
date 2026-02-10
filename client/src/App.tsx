@@ -51,7 +51,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 
   if (loading || !meta) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <p className="text-text-muted text-sm">Loading...</p>
       </div>
     );
@@ -61,9 +61,13 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const defaultCategory = categories[0] || 'engagement';
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-bg-primary relative">
+      {/* Atmospheric glow */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-60 w-[600px] h-[400px] bg-accent-blue/[0.03] rounded-full blur-[120px]" />
+      </div>
       <Sidebar categories={categories} onLogout={onLogout} />
-      <main className="ml-[220px] p-6">
+      <main className="ml-[240px] p-7 relative z-10">
         <Routes>
           {/* Category pages */}
           {categories.map((cat) => (

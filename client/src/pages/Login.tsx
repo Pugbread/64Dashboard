@@ -1,73 +1,68 @@
-import { useState } from 'react';
-import { BarChart3, Lock } from 'lucide-react';
-import { login } from '../api/client';
+import { useState, FormEvent } from 'react';
+import { BarChart3 } from 'lucide-react';
 
-interface LoginProps {
-  onLogin: (token: string) => void;
-}
+interface LoginProps { onLogin: (token: string) => void }
 
 export default function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-
+    setLoading(true);
     try {
-      const { data } = await login(password);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid password');
       onLogin(data.token);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-bg-primary flex items-center justify-center relative overflow-hidden">
+      {/* Atmospheric glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent-blue/[0.06] rounded-full blur-[120px]" />
+        <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-accent-blue/[0.04] rounded-full blur-[80px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-[4px] bg-white mx-auto mb-4 flex items-center justify-center">
-            <BarChart3 size={20} className="text-black" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-blue flex items-center justify-center mx-auto mb-4 shadow-glow-blue">
+            <BarChart3 size={24} className="text-white" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">64's Dash</h1>
-          <p className="text-text-muted text-sm mt-1">Roblox Analytics</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">64's Dash</h1>
+          <p className="text-text-secondary text-sm mt-1.5">Roblox Analytics Dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card p-5 space-y-4">
-          <div>
-            <label className="block text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">
-              Password
-            </label>
-            <div className="relative">
-              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+        <form onSubmit={handleSubmit} className="card p-7 space-y-5">
+          <div className="relative z-10 space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-text-secondary mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="input-field pl-9"
+                placeholder="Enter admin password"
+                className="input-field"
                 autoFocus
               />
             </div>
+            {error && <p className="text-status-error text-xs">{error}</p>}
+            <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
           </div>
-
-          {error && (
-            <div className="text-status-error text-xs bg-status-error-bg px-3 py-2 rounded-[3px]">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Logging in...' : 'Log In'}
-          </button>
         </form>
       </div>
     </div>

@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getCategoryStats } from '../api/client';
 
+export type Range = '1h' | '6h' | '24h' | '3d' | '7d' | '30d';
+export type Interval = '1m' | '5m' | '30m' | '1h' | '3h' | '7h' | '1d';
+
 export interface TimeSeriesPoint {
   date: string;
   value: number;

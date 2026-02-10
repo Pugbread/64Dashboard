@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Activity, Radio } from 'lucide-react';
 import { useGames } from '../hooks/useGames';
-import { useCategoryStats, TimeSeriesResult } from '../hooks/useStats';
+import { useCategoryStats, Range, Interval, ProviderMeta, TimeSeriesResult } from '../hooks/useStats';
 import { useCCU } from '../hooks/useCCU';
 import GameSelector from '../components/GameSelector';
 import Dropdown from '../components/Dropdown';
 import TimeSeriesChart from '../components/TimeSeriesChart';
+import { Users } from 'lucide-react';
 
 const RANGE_OPTIONS = [
   { value: '1h', label: '1 Hour' },
@@ -16,26 +16,22 @@ const RANGE_OPTIONS = [
   { value: '30d', label: '30 Days' },
 ];
 
-const INTERVAL_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  '1m':  [{ value: '1m', label: '1 Minute' }],
-  '5m':  [{ value: '5m', label: '5 Minutes' }],
-  '30m': [{ value: '30m', label: '30 Minutes' }],
-  '1h':  [{ value: '1h', label: '1 Hour' }],
-  '3h':  [{ value: '3h', label: '3 Hours' }],
-  '7h':  [{ value: '7h', label: '7 Hours' }],
-  '1d':  [{ value: '1d', label: '1 Day' }],
+const INTERVAL_OPTIONS: Record<string, string> = {
+  '1m': '1 Minute', '5m': '5 Minutes', '30m': '30 Minutes',
+  '1h': '1 Hour', '3h': '3 Hours', '7h': '7 Hours', '1d': '1 Day',
 };
 
 const INTERVAL_AVAILABILITY: Record<string, string[]> = {
-  '1h':  ['1m', '5m', '30m'],
-  '6h':  ['5m', '30m', '1h', '3h'],
-  '24h': ['30m', '1h', '3h', '7h'],
-  '3d':  ['30m', '1h', '3h', '7h', '1d'],
-  '7d':  ['1h', '3h', '7h', '1d'],
-  '30d': ['3h', '7h', '1d'],
+  '1m': ['1h'],
+  '5m': ['1h', '6h'],
+  '30m': ['1h', '6h', '24h', '3d'],
+  '1h': ['6h', '24h', '3d', '7d'],
+  '3h': ['1h', '6h', '24h', '3d', '7d', '30d'],
+  '7h': ['1h', '6h', '24h', '3d', '7d', '30d'],
+  '1d': ['3d', '7d', '30d'],
 };
 
-const DEFAULT_INTERVALS: Record<string, string> = {
+const DEFAULT_INTERVAL: Record<string, string> = {
   '1h': '1m', '6h': '5m', '24h': '1h', '3d': '3h', '7d': '1d', '30d': '1d',
 };
 
@@ -45,116 +41,82 @@ const CATEGORY_LABELS: Record<string, string> = {
   retention: 'Retention',
 };
 
-interface CategoryPageProps {
-  category: string;
+function getAvailableIntervals(range: string) {
+  return Object.entries(INTERVAL_AVAILABILITY)
+    .filter(([, ranges]) => ranges.includes(range))
+    .map(([iv]) => ({
+      value: iv,
+      label: INTERVAL_OPTIONS[iv] || iv,
+    }));
 }
 
-export default function CategoryPage({ category }: CategoryPageProps) {
-  const { games, loading: gamesLoading } = useGames();
+export default function CategoryPage({ category }: { category: string }) {
+  const { games } = useGames();
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [range, setRange] = useState('7d');
-  const [interval, setInterval] = useState(DEFAULT_INTERVALS['7d']);
+  const [range, setRange] = useState<Range>('24h');
+  const [interval, setInterval] = useState<Interval>('1h');
+  const { data: stats, loading } = useCategoryStats(selectedGameId, category, range, interval);
+  const ccu = useCCU(category === 'engagement' ? selectedGameId : null);
 
-  const ccu = useCCU(selectedGameId);
-  const { data: stats, loading: statsLoading, refetch } = useCategoryStats(selectedGameId, category, range, interval);
-
-  // Auto-select first game
   useEffect(() => {
     if (games.length > 0 && !selectedGameId) setSelectedGameId(games[0].id);
   }, [games, selectedGameId]);
 
-  // When range changes, reset interval to default if current is unavailable
   useEffect(() => {
-    const available = INTERVAL_AVAILABILITY[range] || [];
-    if (!available.includes(interval)) {
-      setInterval(DEFAULT_INTERVALS[range] || available[0]);
+    const available = getAvailableIntervals(range);
+    if (!available.find((a) => a.value === interval)) {
+      setInterval((DEFAULT_INTERVAL[range] || available[0]?.value || '1h') as Interval);
     }
   }, [range]);
 
-  const availableIntervals = (INTERVAL_AVAILABILITY[range] || []).flatMap(
-    (iv) => INTERVAL_OPTIONS[iv] || []
-  );
-
-  const label = CATEGORY_LABELS[category] || category.charAt(0).toUpperCase() + category.slice(1);
-
-  if (gamesLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="animate-spin text-text-muted" size={18} />
-      </div>
-    );
-  }
-
-  if (games.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-        <Activity size={24} className="text-text-muted mb-4" />
-        <p className="text-white text-base font-semibold">No games added yet</p>
-        <p className="text-text-muted text-sm mt-1">Go to Games to add your first game</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-white">{label}</h2>
-          {/* CCU badge — only on engagement */}
-          {category === 'engagement' && (
-            <div className="flex items-center gap-1.5 border border-border rounded-[3px] px-2.5 py-1">
-              <Radio size={10} className="text-status-success" />
-              <span className="text-xs font-mono text-white">{ccu.toLocaleString()}</span>
-              <span className="text-[10px] text-text-muted">online</span>
-            </div>
-          )}
+        <div>
+          <h1 className="text-xl font-bold text-white tracking-tight">{CATEGORY_LABELS[category] || category}</h1>
+          <p className="text-text-secondary text-sm mt-0.5">Analytics overview</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5">
           <GameSelector games={games} selectedGameId={selectedGameId} onSelect={setSelectedGameId} />
-          <Dropdown value={range} options={RANGE_OPTIONS} onChange={setRange} />
-          <Dropdown value={interval} options={availableIntervals} onChange={setInterval} />
-          <button
-            onClick={refetch}
-            disabled={statsLoading}
-            className="p-2 rounded-[3px] text-text-muted hover:text-white hover:bg-white/[0.04] transition-colors disabled:opacity-50 border border-border"
-          >
-            <RefreshCw size={14} className={statsLoading ? 'animate-spin' : ''} />
-          </button>
+          <Dropdown value={range} options={RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
+          <Dropdown value={interval} options={getAvailableIntervals(range)} onChange={(v) => setInterval(v as Interval)} />
         </div>
       </div>
 
-      {/* Loading */}
-      {statsLoading && !stats && (
-        <div className="flex items-center justify-center h-64">
-          <RefreshCw className="animate-spin text-text-muted" size={18} />
+      {/* CCU banner */}
+      {category === 'engagement' && ccu !== null && (
+        <div className="card p-4 flex items-center gap-3">
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-accent-blue/10 flex items-center justify-center">
+              <Users size={16} className="text-accent-blue" />
+            </div>
+            <div>
+              <p className="text-text-secondary text-xs font-medium">Concurrent Users</p>
+              <p className="text-white text-xl font-bold tracking-tight">{ccu.toLocaleString()}</p>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-accent-blue animate-pulse ml-1" />
+          </div>
         </div>
       )}
 
       {/* Charts */}
-      {stats && stats.providers.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {stats.providers.map((provider) => {
-            const result = stats.metrics[provider.id] as TimeSeriesResult | undefined;
-            if (!result) return null;
-            return (
-              <TimeSeriesChart
-                key={provider.id}
-                provider={provider}
-                result={result}
-                interval={stats.interval}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Empty */}
-      {stats && Object.keys(stats.metrics).length === 0 && (
+      {!selectedGameId ? (
         <div className="card p-12 text-center">
-          <Activity size={28} className="mx-auto text-text-muted mb-3" />
-          <p className="text-white font-semibold">No data yet</p>
-          <p className="text-text-muted text-sm mt-1">Start sending events from your game</p>
+          <div className="relative z-10 text-text-secondary text-sm">Select a game to view analytics</div>
+        </div>
+      ) : loading ? (
+        <div className="text-text-secondary text-sm py-12 text-center">Loading analytics...</div>
+      ) : stats?.providers.length === 0 ? (
+        <div className="card p-12 text-center">
+          <div className="relative z-10 text-text-secondary text-sm">No data available for this period</div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {stats?.providers.map((p: ProviderMeta) => {
+            const result: TimeSeriesResult = stats.metrics[p.id] || { type: 'timeseries', data: [] };
+            return <TimeSeriesChart key={p.id} provider={p} result={result} interval={interval} />;
+          })}
         </div>
       )}
     </div>

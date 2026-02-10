@@ -1,32 +1,18 @@
 import { useState } from 'react';
-import { Plus, Trash2, Gamepad2, Calendar, Hash, Globe } from 'lucide-react';
+import { Plus, Trash2, Gamepad2 } from 'lucide-react';
 import { useGames } from '../hooks/useGames';
 import AddGameModal from '../components/AddGameModal';
 
 export default function Games() {
   const { games, loading, addGame, deleteGame } = useGames();
   const [showModal, setShowModal] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this game and all its analytics data?')) return;
-    setDeletingId(id);
-    try {
-      await deleteGame(id);
-    } catch (err) {
-      console.error('Failed to delete game:', err);
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Games</h2>
-          <p className="text-sm text-text-muted mt-0.5">Manage tracked games</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">Games</h1>
+          <p className="text-text-secondary text-sm mt-0.5">Manage tracked Roblox games</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
           <Plus size={14} />
@@ -34,81 +20,45 @@ export default function Games() {
         </button>
       </div>
 
-      {/* Games */}
       {loading ? (
-        <div className="text-text-muted text-center py-16 text-sm">Loading...</div>
+        <div className="text-text-secondary text-sm py-12 text-center">Loading games...</div>
       ) : games.length === 0 ? (
-        <div className="card p-16 text-center">
-          <Gamepad2 size={24} className="mx-auto text-text-muted mb-3" />
-          <p className="text-white font-semibold">No games yet</p>
-          <p className="text-text-muted text-sm mt-1 mb-4">Add your first game to start tracking</p>
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            Add Game
-          </button>
+        <div className="card p-12 text-center">
+          <div className="relative z-10">
+            <Gamepad2 size={36} className="mx-auto mb-3 text-text-muted" />
+            <p className="text-text-secondary text-sm font-medium">No games added yet</p>
+            <p className="text-text-muted text-xs mt-1">Click "Add Game" to get started</p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {games.map((game) => (
-            <div key={game.id} className="card card-hover group">
-              <div className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    {game.icon_url ? (
-                      <img
-                        src={game.icon_url}
-                        alt={game.name}
-                        className="w-10 h-10 rounded-[3px] object-cover border border-border"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-[3px] bg-bg-elevated border border-border flex items-center justify-center">
-                        <Gamepad2 size={16} className="text-text-muted" />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-white font-semibold text-[14px]">{game.name}</h3>
-                      <div className="flex items-center gap-1.5 text-[11px] text-text-muted mt-0.5">
-                        <Calendar size={10} />
-                        {new Date(game.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
+            <div key={game.id} className="card card-hover p-4 flex items-center gap-4">
+              <div className="relative z-10 flex items-center gap-4 w-full">
+                {game.icon_url ? (
+                  <img src={game.icon_url} alt={game.name} className="w-12 h-12 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-bg-elevated flex items-center justify-center">
+                    <Gamepad2 size={20} className="text-text-muted" />
                   </div>
-                  <button
-                    onClick={() => handleDelete(game.id)}
-                    disabled={deletingId === game.id}
-                    className="p-1.5 rounded-[2px] text-text-muted hover:text-status-error hover:bg-status-error-bg transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{game.name}</p>
+                  <p className="text-text-muted text-[10px] font-mono mt-0.5 truncate">{game.id}</p>
                 </div>
-
-                {/* Metadata */}
-                <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <Hash size={10} className="text-text-muted" />
-                    <span className="text-text-muted">ID:</span>
-                    <span className="text-text-secondary font-mono">{game.id.slice(0, 12)}...</span>
-                  </div>
-                  {game.universe_id && (
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <Globe size={10} className="text-text-muted" />
-                      <span className="text-text-muted">Universe:</span>
-                      <span className="text-text-secondary font-mono">{game.universe_id}</span>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => { if (confirm(`Delete "${game.name}"?`)) deleteGame(game.id); }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-status-error hover:bg-status-error-bg transition-all"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <AddGameModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        onAdd={async (name, universeId) => {
-          await addGame(name, universeId);
-        }}
-      />
+      {showModal && <AddGameModal onAdd={addGame} onClose={() => setShowModal(false)} />}
     </div>
   );
 }

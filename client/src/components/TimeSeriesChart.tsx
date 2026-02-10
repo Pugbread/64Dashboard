@@ -15,9 +15,9 @@ interface TimeSeriesChartProps {
   interval: string;
 }
 
-const CATEGORY_STROKES: Record<string, string> = {
-  engagement: '#FFFFFF',
-  revenue: '#22C55E',
+const CATEGORY_COLORS: Record<string, string> = {
+  engagement: '#3B82F6',
+  revenue: '#4ADE80',
   retention: '#F59E0B',
 };
 
@@ -28,9 +28,8 @@ function formatTick(dateStr: string, interval: string): string {
   }
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  if (['1m', '5m', '30m', '1h'].includes(interval)) {
+  if (['1m', '5m', '30m', '1h'].includes(interval))
     return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
@@ -47,88 +46,90 @@ function formatTooltipLabel(dateStr: string, interval: string): string {
 }
 
 function formatValue(value: number, format?: string, unit?: string): string {
-  if (format === 'duration') return `${value.toFixed(1)} min`;
+  if (format === 'duration') {
+    if (value < 1) return `${Math.round(value * 60)}s`;
+    return `${value.toFixed(1)}m`;
+  }
   if (format === 'currency') return `${unit || 'R$'} ${value.toLocaleString()}`;
   if (format === 'percentage') return `${value.toFixed(1)}%`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 export default function TimeSeriesChart({ provider, result, interval }: TimeSeriesChartProps) {
-  const stroke = CATEGORY_STROKES[provider.category] || '#FFFFFF';
+  const color = CATEGORY_COLORS[provider.category] || '#3B82F6';
 
   if (result.data.length === 0) {
     return (
-      <div className="card p-4">
-        <p className="text-[12px] text-text-muted font-medium uppercase tracking-wide mb-4">
-          {provider.name}
-        </p>
-        <div className="h-44 flex items-center justify-center text-text-muted text-sm">
-          No data available
+      <div className="card p-5">
+        <div className="relative z-10">
+          <p className="text-[13px] text-text-secondary font-medium mb-4">{provider.name}</p>
+          <div className="h-52 flex items-center justify-center text-text-muted text-sm">
+            No data available
+          </div>
         </div>
       </div>
     );
   }
 
-  // Compute summary value (latest point)
-  const latest = result.data[result.data.length - 1];
-  const summaryValue = formatValue(latest.value, provider.format, provider.unit);
+  // Compute AVERAGE of all data points for the title
+  const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
+  const displayValue = formatValue(avg, provider.format, provider.unit);
 
   return (
-    <div className="card card-hover p-4">
-      <div className="flex items-start justify-between mb-1">
-        <p className="text-[12px] text-text-muted font-medium uppercase tracking-wide">
-          {provider.name}
+    <div className="card card-hover p-5">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[13px] text-text-secondary font-medium">{provider.name}</p>
+        </div>
+        <p className="text-[28px] font-bold text-white tracking-tight leading-none mb-5">
+          {displayValue}
         </p>
-      </div>
-      <p className="text-[22px] font-bold text-white tracking-tight leading-none mb-4">
-        {summaryValue}
-      </p>
-      <div className="h-40">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={result.data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-            <defs>
-              <linearGradient id={`g-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={stroke} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={stroke} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickFormatter={(d) => formatTick(d, interval)}
-              tick={{ fill: '#555', fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-              minTickGap={40}
-            />
-            <YAxis
-              tick={{ fill: '#555', fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#111',
-                border: '1px solid #1E1E1E',
-                borderRadius: '3px',
-                color: '#fff',
-                fontSize: '12px',
-              }}
-              formatter={(value: number) => [formatValue(value, provider.format, provider.unit), provider.name]}
-              labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke={stroke}
-              strokeWidth={1.5}
-              fill={`url(#g-${provider.id})`}
-              dot={false}
-              activeDot={{ r: 3, fill: stroke, stroke: '#000', strokeWidth: 1 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="h-44">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={result.data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`g-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={(d) => formatTick(d, interval)}
+                tick={{ fill: '#6B6B76', fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={40}
+              />
+              <YAxis tick={{ fill: '#6B6B76', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#0C0F1A',
+                  border: '1px solid #1A1D2E',
+                  borderRadius: '10px',
+                  color: '#fff',
+                  fontSize: '12px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                }}
+                formatter={(value: number) => [formatValue(value, provider.format, provider.unit), provider.name]}
+                labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={color}
+                strokeWidth={2}
+                fill={`url(#g-${provider.id})`}
+                dot={false}
+                activeDot={{ r: 4, fill: color, stroke: '#000', strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
