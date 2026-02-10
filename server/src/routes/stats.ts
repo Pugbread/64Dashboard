@@ -23,20 +23,40 @@ router.get('/meta', (_req: Request, res: Response) => {
   });
 });
 
-// GET /api/stats/:gameId/ccu — lightweight concurrent-user count
+// GET /api/stats/:gameId/ccu — live player count from Roblox API
 router.get('/:gameId/ccu', async (req: Request, res: Response) => {
   try {
     const gameId = String(req.params.gameId);
+
+    // Look up universe_id for this game
     const { rows } = await pool.query(
-      `SELECT COUNT(DISTINCT player_id) as value
-       FROM sessions
-       WHERE game_id = $1 AND ended_at IS NULL`,
+      'SELECT universe_id FROM games WHERE id = $1',
       [gameId]
     );
-    res.json({ ccu: Number(rows[0]?.value || 0) });
+
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'Game not found' });
+      return;
+    }
+
+    const universeId = rows[0].universe_id;
+    if (!universeId) {
+      // No universe_id linked — can't poll Roblox
+      res.json({ ccu: 0, source: 'none' });
+      return;
+    }
+
+    // Fetch live player count from Roblox Games API
+    const robloxRes = await fetch(
+      `https://games.roblox.com/v1/games?universeIds=${universeId}`
+    );
+    const data: any = await robloxRes.json();
+    const playing = data?.data?.[0]?.playing ?? 0;
+
+    res.json({ ccu: playing, source: 'roblox' });
   } catch (error) {
     console.error('CCU error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.json({ ccu: 0, source: 'error' });
   }
 });
 
