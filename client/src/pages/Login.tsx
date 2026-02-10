@@ -27,53 +27,47 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Background atmosphere */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-accent-purple/[0.07] rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-accent-pink/[0.04] rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="w-full max-w-sm relative z-10">
+    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-purple mx-auto mb-4 flex items-center justify-center shadow-glow-purple">
-            <BarChart3 size={24} className="text-white" />
+          <div className="w-12 h-12 rounded-[4px] bg-white mx-auto mb-4 flex items-center justify-center">
+            <BarChart3 size={20} className="text-black" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">64Dashboard</h1>
-          <p className="text-text-secondary text-sm mt-1.5">Roblox Analytics Platform</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">64Dashboard</h1>
+          <p className="text-text-muted text-sm mt-1">Roblox Analytics</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card p-6 space-y-5">
-          <div className="relative z-10">
-            <div>
-              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
-                Admin Password
-              </label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="input-field pl-10"
-                  autoFocus
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="card p-5 space-y-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">
+              Password
+            </label>
+            <div className="relative">
+              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="input-field pl-9"
+                autoFocus
+              />
             </div>
-
-            {error && (
-              <div className="mt-4 pill-error text-xs px-3 py-2.5 w-full justify-center rounded-lg">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="btn-primary w-full mt-5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Logging in...' : 'Log In'}
-            </button>
           </div>
+
+          {error && (
+            <div className="text-status-error text-xs bg-status-error-bg px-3 py-2 rounded-[3px]">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !password}
+            className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Logging in...' : 'Log In'}
+          </button>
         </form>
       </div>
     </div>

@@ -42,12 +42,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary relative">
-      {/* Global atmosphere glow */}
-      <div className="fixed top-0 left-[240px] right-0 h-[400px] bg-gradient-page pointer-events-none z-0" />
-
+    <div className="min-h-screen bg-black">
       <Sidebar onLogout={handleLogout} />
-      <main className="ml-[240px] p-8 relative z-10">
+      <main className="ml-[220px] p-6">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/games" element={<Games />} />

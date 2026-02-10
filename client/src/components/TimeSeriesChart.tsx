@@ -15,10 +15,10 @@ interface TimeSeriesChartProps {
   interval?: string;
 }
 
-const CHART_COLORS: Record<string, { stroke: string; fill: string }> = {
-  engagement: { stroke: '#8E54E9', fill: '#8E54E9' },
-  revenue: { stroke: '#4ADE80', fill: '#4ADE80' },
-  retention: { stroke: '#FF49DB', fill: '#FF49DB' },
+const CATEGORY_STROKES: Record<string, string> = {
+  engagement: '#FFFFFF',
+  revenue: '#22C55E',
+  retention: '#888888',
 };
 
 const INTERVAL_LABELS: Record<string, string> = {
@@ -29,11 +29,10 @@ const INTERVAL_LABELS: Record<string, string> = {
 
 function formatDate(dateStr: string, interval: string = 'daily'): string {
   if (interval === 'hourly') {
-    // Format: "Feb 9, 14:00"
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-      ', ' +
+      ' ' +
       d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   }
   if (interval === 'weekly') {
@@ -41,7 +40,6 @@ function formatDate(dateStr: string, interval: string = 'daily'): string {
     if (isNaN(d.getTime())) return dateStr;
     return 'W ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
-  // daily
   const d = new Date(dateStr + 'T00:00:00');
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -76,89 +74,79 @@ function formatTooltipValue(value: number, format?: string, unit?: string): stri
 }
 
 export default function TimeSeriesChart({ provider, result, interval = 'daily' }: TimeSeriesChartProps) {
-  const colors = CHART_COLORS[provider.category] || CHART_COLORS.engagement;
+  const stroke = CATEGORY_STROKES[provider.category] || '#FFFFFF';
 
   if (result.data.length === 0) {
     return (
-      <div className="card p-5">
-        <div className="relative z-10">
-          <p className="text-[13px] text-text-secondary font-medium mb-4">{provider.name}</p>
-          <div className="h-52 flex items-center justify-center text-text-muted text-sm">
-            No data available for this period
-          </div>
+      <div className="card p-4">
+        <p className="text-[12px] text-text-muted font-medium uppercase tracking-wide mb-4">
+          {provider.name}
+        </p>
+        <div className="h-48 flex items-center justify-center text-text-muted text-sm">
+          No data available
         </div>
       </div>
     );
   }
 
   return (
-    <div className="card card-hover p-5">
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-[13px] text-text-secondary font-medium">{provider.name}</p>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted px-2 py-0.5 rounded-md bg-white/[0.03] border border-border/50">
-              {INTERVAL_LABELS[interval] || interval}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: colors.stroke, boxShadow: `0 0 6px ${colors.stroke}` }}
-              />
-              <span className="text-[11px] text-text-muted">Current Period</span>
-            </div>
-          </div>
-        </div>
-        <div className="h-52">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={result.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <defs>
-                <linearGradient id={`grad-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={colors.fill} stopOpacity={0.25} />
-                  <stop offset="100%" stopColor={colors.fill} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tickFormatter={(d) => formatDate(d, interval)}
-                tick={{ fill: '#6B6B76', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fill: '#6B6B76', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1A161F',
-                  border: '1px solid #2D2D2D',
-                  borderRadius: '10px',
-                  color: '#fff',
-                  fontSize: '12px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                }}
-                formatter={(value: number) => [
-                  formatTooltipValue(value, provider.format, provider.unit),
-                  provider.name,
-                ]}
-                labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke={colors.stroke}
-                strokeWidth={2}
-                fill={`url(#grad-${provider.id})`}
-                dot={false}
-                activeDot={{ r: 4, fill: colors.stroke, stroke: '#000', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+    <div className="card card-hover p-4">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[12px] text-text-muted font-medium uppercase tracking-wide">
+          {provider.name}
+        </p>
+        <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
+          {INTERVAL_LABELS[interval] || interval}
+        </span>
+      </div>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={result.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`grad-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity={0.1} />
+                <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickFormatter={(d) => formatDate(d, interval)}
+              tick={{ fill: '#555', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              tick={{ fill: '#555', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#111',
+                border: '1px solid #1E1E1E',
+                borderRadius: '3px',
+                color: '#fff',
+                fontSize: '12px',
+              }}
+              formatter={(value: number) => [
+                formatTooltipValue(value, provider.format, provider.unit),
+                provider.name,
+              ]}
+              labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={stroke}
+              strokeWidth={1.5}
+              fill={`url(#grad-${provider.id})`}
+              dot={false}
+              activeDot={{ r: 3, fill: stroke, stroke: '#000', strokeWidth: 1 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

@@ -12,15 +12,15 @@ const ranges = [
 
 export default function RangeSelector({ value, onChange }: RangeSelectorProps) {
   return (
-    <div className="flex bg-bg-card border border-border rounded-xl p-1 gap-0.5">
+    <div className="flex border border-border rounded-[3px] overflow-hidden">
       {ranges.map((r) => (
         <button
           key={r.value}
           onClick={() => onChange(r.value)}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+          className={`px-3 py-1.5 text-xs font-semibold transition-colors duration-150 border-r border-border last:border-r-0 ${
             value === r.value
-              ? 'bg-gradient-purple text-white shadow-glow-sm'
-              : 'text-text-secondary hover:text-white'
+              ? 'bg-white text-black'
+              : 'text-text-secondary hover:text-white bg-transparent'
           }`}
         >
           {r.label}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Activity, TrendingUp, DollarSign, Users, Layers } from 'lucide-react';
+import { RefreshCw, Activity, DollarSign, Users, Layers, TrendingUp } from 'lucide-react';
 import { useGames } from '../hooks/useGames';
 import { useStats, ProviderMeta, ScalarResult, TimeSeriesResult } from '../hooks/useStats';
 import GameSelector from '../components/GameSelector';
@@ -8,35 +8,26 @@ import IntervalSelector from '../components/IntervalSelector';
 import StatCard from '../components/StatCard';
 import TimeSeriesChart from '../components/TimeSeriesChart';
 
-/** Category display config. Add new categories here to customize their appearance. */
-const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; gradient: string }> = {
+/** Category display config. Add new categories here. */
+const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
   engagement: {
     label: 'Engagement',
-    icon: <Users size={16} />,
-    color: '#8E54E9',
-    gradient: 'from-accent-purple/10 to-transparent',
+    icon: <Users size={14} />,
   },
   revenue: {
     label: 'Revenue',
-    icon: <DollarSign size={16} />,
-    color: '#4ADE80',
-    gradient: 'from-status-success/10 to-transparent',
+    icon: <DollarSign size={14} />,
   },
   retention: {
     label: 'Retention',
-    icon: <TrendingUp size={16} />,
-    color: '#FF49DB',
-    gradient: 'from-accent-pink/10 to-transparent',
+    icon: <TrendingUp size={14} />,
   },
 };
 
-/** Fallback config for unknown categories */
 function getCategoryConfig(category: string) {
   return CATEGORY_CONFIG[category] || {
     label: category.charAt(0).toUpperCase() + category.slice(1),
-    icon: <Layers size={16} />,
-    color: '#8E54E9',
-    gradient: 'from-accent-purple/10 to-transparent',
+    icon: <Layers size={14} />,
   };
 }
 
@@ -62,7 +53,7 @@ export default function Dashboard() {
   if (gamesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <RefreshCw className="animate-spin text-accent-purple" size={24} />
+        <RefreshCw className="animate-spin text-text-muted" size={20} />
       </div>
     );
   }
@@ -70,25 +61,22 @@ export default function Dashboard() {
   if (games.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-        <div className="w-16 h-16 rounded-2xl bg-accent-purple-glow flex items-center justify-center mb-5">
-          <Activity size={28} className="text-accent-purple" />
-        </div>
-        <p className="text-white text-lg font-semibold">No games added yet</p>
-        <p className="text-text-secondary text-sm mt-2 max-w-xs">
-          Go to the Games page to add your first game and start tracking analytics
+        <Activity size={24} className="text-text-muted mb-4" />
+        <p className="text-white text-base font-semibold">No games added yet</p>
+        <p className="text-text-muted text-sm mt-1">
+          Go to Games to add your first game
         </p>
       </div>
     );
   }
 
-  // Group providers by category, preserving backend order
+  // Group providers by category
   const categorySections: CategorySection[] = [];
 
   if (stats) {
     const categoryOrder = stats.categories || [];
-
-    // Build a map of category -> providers
     const categoryMap = new Map<string, CategorySection>();
+
     for (const cat of categoryOrder) {
       categoryMap.set(cat, { category: cat, scalars: [], timeseries: [] });
     }
@@ -97,7 +85,6 @@ export default function Dashboard() {
       const result = stats.metrics[provider.id];
       if (!result) continue;
 
-      // Ensure category section exists (handles new categories not in the order list)
       if (!categoryMap.has(provider.category)) {
         categoryMap.set(provider.category, { category: provider.category, scalars: [], timeseries: [] });
       }
@@ -110,7 +97,6 @@ export default function Dashboard() {
       }
     }
 
-    // Build final array in order, only including sections with data
     for (const cat of categoryMap.keys()) {
       const section = categoryMap.get(cat)!;
       if (section.scalars.length > 0 || section.timeseries.length > 0) {
@@ -124,24 +110,20 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">Dashboard</h2>
-          <p className="text-sm text-text-muted mt-0.5">Analytics overview for your games</p>
+          <h2 className="text-lg font-semibold text-white">Dashboard</h2>
+          <p className="text-sm text-text-muted mt-0.5">Analytics overview</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <GameSelector
-            games={games}
-            selectedGameId={selectedGameId}
-            onSelect={setSelectedGameId}
-          />
+        <div className="flex items-center gap-2 flex-wrap">
+          <GameSelector games={games} selectedGameId={selectedGameId} onSelect={setSelectedGameId} />
           <RangeSelector value={range} onChange={setRange} />
           <IntervalSelector value={interval} onChange={setInterval} />
           <button
             onClick={refetch}
             disabled={statsLoading}
-            className="p-2.5 rounded-xl text-text-muted hover:text-white hover:bg-white/[0.04] transition-all disabled:opacity-50 border border-border"
+            className="p-2 rounded-[3px] text-text-muted hover:text-white hover:bg-white/[0.04] transition-colors disabled:opacity-50 border border-border"
             title="Refresh"
           >
-            <RefreshCw size={16} className={statsLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={statsLoading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
@@ -149,7 +131,7 @@ export default function Dashboard() {
       {/* Loading */}
       {statsLoading && !stats && (
         <div className="flex items-center justify-center h-64">
-          <RefreshCw className="animate-spin text-accent-purple" size={24} />
+          <RefreshCw className="animate-spin text-text-muted" size={20} />
         </div>
       )}
 
@@ -158,27 +140,19 @@ export default function Dashboard() {
         const config = getCategoryConfig(section.category);
 
         return (
-          <div key={section.category} className="space-y-4">
+          <div key={section.category} className="space-y-3">
             {/* Category Header */}
-            <div className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: `${config.color}15`, color: config.color }}
-              >
-                {config.icon}
-              </div>
-              <div>
-                <h3 className="text-[15px] font-semibold text-white">{config.label}</h3>
-                <p className="text-[11px] text-text-muted">
-                  {section.scalars.length + section.timeseries.length} metric{section.scalars.length + section.timeseries.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <div className="flex-1 h-px bg-border/50 ml-2" />
+            <div className="flex items-center gap-2.5">
+              <span className="text-text-muted">{config.icon}</span>
+              <h3 className="text-[13px] font-semibold text-text-secondary uppercase tracking-wide">
+                {config.label}
+              </h3>
+              <div className="flex-1 h-px bg-border ml-1" />
             </div>
 
             {/* Scalar KPI Cards */}
             {section.scalars.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {section.scalars.map(({ provider, result }) => (
                   <StatCard key={provider.id} provider={provider} result={result} />
                 ))}
@@ -187,7 +161,7 @@ export default function Dashboard() {
 
             {/* Time Series Charts */}
             {section.timeseries.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {section.timeseries.map(({ provider, result }) => (
                   <TimeSeriesChart key={provider.id} provider={provider} result={result} interval={interval} />
                 ))}
@@ -200,13 +174,11 @@ export default function Dashboard() {
       {/* Empty data state */}
       {stats && categorySections.length === 0 && (
         <div className="card p-12 text-center">
-          <div className="relative z-10">
-            <Activity size={40} className="mx-auto text-text-muted mb-4" />
-            <p className="text-white text-lg font-semibold">No data yet</p>
-            <p className="text-text-secondary text-sm mt-2">
-              Start sending events from your Roblox game to see analytics
-            </p>
-          </div>
+          <Activity size={32} className="mx-auto text-text-muted mb-3" />
+          <p className="text-white font-semibold">No data yet</p>
+          <p className="text-text-muted text-sm mt-1">
+            Start sending events from your Roblox game
+          </p>
         </div>
       )}
     </div>

@@ -38,28 +38,26 @@ export default function AddGameModal({ open, onClose, onAdd }: AddGameModalProps
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="card p-0 w-full max-w-md shadow-2xl border-border">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70">
+      <div className="card p-0 w-full max-w-md border-border">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent-purple-glow flex items-center justify-center">
-              <Gamepad2 size={16} className="text-accent-purple" />
-            </div>
-            <h2 className="text-[15px] font-semibold text-white">Add Game</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <Gamepad2 size={16} className="text-text-muted" />
+            <h2 className="text-[14px] font-semibold text-white">Add Game</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-white/[0.04] transition-colors"
+            className="p-1 rounded-[2px] text-text-muted hover:text-white hover:bg-white/[0.04] transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-[12px] font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
+            <label className="block text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">
               Game Name
             </label>
             <input
@@ -73,8 +71,8 @@ export default function AddGameModal({ open, onClose, onAdd }: AddGameModalProps
           </div>
 
           <div>
-            <label className="block text-[12px] font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
-              Universe ID <span className="text-text-muted normal-case">(auto-fetches icon from Roblox)</span>
+            <label className="block text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">
+              Universe ID <span className="normal-case text-text-muted">(auto-fetches icon)</span>
             </label>
             <input
               type="text"
@@ -86,16 +84,16 @@ export default function AddGameModal({ open, onClose, onAdd }: AddGameModalProps
           </div>
 
           {error && (
-            <div className="pill-error text-xs px-3 py-2 w-full justify-center rounded-lg">
+            <div className="text-status-error text-xs bg-status-error-bg px-3 py-2 rounded-[3px]">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.04] transition-colors"
+              className="px-4 py-2 rounded-[3px] text-sm font-medium text-text-secondary hover:text-white transition-colors"
             >
               Cancel
             </button>

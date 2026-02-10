@@ -13,18 +13,18 @@ const intervals = [
 
 export default function IntervalSelector({ value, onChange }: IntervalSelectorProps) {
   return (
-    <div className="flex items-center bg-bg-card border border-border rounded-xl p-1 gap-0.5">
-      <div className="pl-2 pr-1">
+    <div className="flex items-center border border-border rounded-[3px] overflow-hidden">
+      <div className="px-2 border-r border-border flex items-center h-full">
         <Clock size={13} className="text-text-muted" />
       </div>
       {intervals.map((i) => (
         <button
           key={i.value}
           onClick={() => onChange(i.value)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+          className={`px-3 py-1.5 text-xs font-semibold transition-colors duration-150 border-r border-border last:border-r-0 ${
             value === i.value
-              ? 'bg-gradient-purple text-white shadow-glow-sm'
-              : 'text-text-secondary hover:text-white'
+              ? 'bg-white text-black'
+              : 'text-text-secondary hover:text-white bg-transparent'
           }`}
         >
           {i.label}
