@@ -18,9 +18,7 @@ export const d1RetentionProvider: StatProvider = {
     // We can only compute this for days at least 1 day before "to",
     // since we need the full next day to have passed.
 
-    const cutoff = new Date(to);
-    cutoff.setDate(cutoff.getDate() - 1); // exclude today — D1 data isn't complete yet
-
+    // Include yesterday's cohort — their D1 data is accumulative (today isn't over)
     const { rows } = await pool.query(
       `WITH first_play AS (
          -- First-ever session date per player in this game
@@ -33,7 +31,7 @@ export const d1RetentionProvider: StatProvider = {
          -- Cohort sizes per day within the range
          SELECT first_day, COUNT(*) AS cohort_size
          FROM first_play
-         WHERE first_day >= $2::date AND first_day <= $3::date
+         WHERE first_day >= $2::date AND first_day < $3::date
          GROUP BY first_day
        ),
        retained AS (
@@ -44,7 +42,7 @@ export const d1RetentionProvider: StatProvider = {
            ON  s.game_id   = $1
            AND s.player_id = fp.player_id
            AND DATE(s.started_at) = fp.first_day + 1
-         WHERE fp.first_day >= $2::date AND fp.first_day <= $3::date
+         WHERE fp.first_day >= $2::date AND fp.first_day < $3::date
          GROUP BY fp.first_day
        )
        SELECT c.first_day                                               AS date,
@@ -53,7 +51,7 @@ export const d1RetentionProvider: StatProvider = {
        FROM cohorts c
        LEFT JOIN retained r ON c.first_day = r.first_day
        ORDER BY c.first_day ASC`,
-      [gameId, from.toISOString(), cutoff.toISOString()]
+      [gameId, from.toISOString(), to.toISOString()]
     );
 
     return {
