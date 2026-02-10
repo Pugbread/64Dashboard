@@ -9,6 +9,23 @@ router.get('/', async (_req: Request, res: Response) => {
     const { rows } = await pool.query(
       'SELECT id, name, universe_id, icon_url, created_at FROM games ORDER BY created_at DESC'
     );
+
+    // Back-fill missing icons for games that have a universe_id
+    for (const game of rows) {
+      if (!game.icon_url && game.universe_id) {
+        try {
+          const apiUrl = `https://thumbnails.roblox.com/v1/games/icons?universeIds=${game.universe_id}&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false`;
+          const resp = await fetch(apiUrl);
+          const data: any = await resp.json();
+          const url = data?.data?.[0]?.imageUrl;
+          if (url) {
+            await pool.query('UPDATE games SET icon_url = $1 WHERE id = $2', [url, game.id]);
+            game.icon_url = url;
+          }
+        } catch { /* ignore */ }
+      }
+    }
+
     res.json(rows);
   } catch (error) {
     console.error('Error listing games:', error);
