@@ -1,25 +1,18 @@
 import { Pool } from 'pg';
 import { StatProvider, StatResult, Interval } from './types';
 
-// Import all providers
-import { dauProvider } from './providers/dau';
-import { wauProvider } from './providers/wau';
-import { mauProvider } from './providers/mau';
+import { activeUsersProvider } from './providers/activeUsers';
 import { avgSessionTimeProvider } from './providers/avgSessionTime';
-import { avgPlaytimePerDauProvider } from './providers/avgPlaytimePerDau';
-import { avgJoinsPerDauProvider } from './providers/avgJoinsPerDau';
+import { avgPlaytimeProvider } from './providers/avgPlaytime';
+import { avgJoinsProvider } from './providers/avgJoins';
 import { revenueProvider } from './providers/revenue';
-import { arpdauProvider } from './providers/arpdau';
+import { arpuProvider } from './providers/arpu';
 
 class StatRegistry {
   private providers: Map<string, StatProvider> = new Map();
 
   register(provider: StatProvider): void {
     this.providers.set(provider.id, provider);
-  }
-
-  getProvider(id: string): StatProvider | undefined {
-    return this.providers.get(id);
   }
 
   getAllProviders(): StatProvider[] {
@@ -30,7 +23,6 @@ class StatRegistry {
     return this.getAllProviders().filter((p) => p.category === category);
   }
 
-  /** Get all unique categories in registration order */
   getCategories(): string[] {
     const seen = new Set<string>();
     const categories: string[] = [];
@@ -43,77 +35,49 @@ class StatRegistry {
     return categories;
   }
 
-  getProviderIds(): string[] {
-    return Array.from(this.providers.keys());
-  }
-
-  /** Get metadata about all registered providers (for the frontend) */
-  getProviderMeta(): Array<{
-    id: string;
-    name: string;
-    category: string;
-    resultType: string;
-    unit?: string;
-    format?: string;
-  }> {
-    return this.getAllProviders().map((p) => ({
+  getProviderMeta(category?: string) {
+    const list = category ? this.getProvidersByCategory(category) : this.getAllProviders();
+    return list.map((p) => ({
       id: p.id,
       name: p.name,
       category: p.category,
-      resultType: p.resultType,
       unit: p.unit,
       format: p.format,
     }));
   }
 
-  /** Query multiple providers in parallel */
-  async queryMultiple(
+  async queryCategory(
     pool: Pool,
     gameId: string,
+    category: string,
     from: Date,
     to: Date,
-    metricIds?: string[],
-    interval?: Interval
+    interval: Interval
   ): Promise<Record<string, StatResult>> {
-    const providers = metricIds
-      ? metricIds.map((id) => this.providers.get(id)).filter(Boolean) as StatProvider[]
-      : this.getAllProviders();
-
+    const providers = this.getProvidersByCategory(category);
     const results = await Promise.all(
       providers.map(async (provider) => {
         try {
           const result = await provider.query(pool, gameId, from, to, interval);
           return { id: provider.id, result };
         } catch (error) {
-          console.error(`Error querying stat provider ${provider.id}:`, error);
-          return {
-            id: provider.id,
-            result: provider.resultType === 'scalar'
-              ? { type: 'scalar' as const, value: 0 }
-              : { type: 'timeseries' as const, data: [] },
-          };
+          console.error(`Error querying ${provider.id}:`, error);
+          return { id: provider.id, result: { type: 'timeseries' as const, data: [] } };
         }
       })
     );
-
-    const resultMap: Record<string, StatResult> = {};
-    for (const { id, result } of results) {
-      resultMap[id] = result;
-    }
-    return resultMap;
+    const map: Record<string, StatResult> = {};
+    for (const { id, result } of results) map[id] = result;
+    return map;
   }
 }
 
-// Create and populate the global registry
 export const registry = new StatRegistry();
 
-// Register all default providers
-// To add a new stat: import it above and register it here
-registry.register(dauProvider);
-registry.register(wauProvider);
-registry.register(mauProvider);
+// ── Register providers (add new ones here) ──────────────────
+registry.register(activeUsersProvider);
 registry.register(avgSessionTimeProvider);
-registry.register(avgPlaytimePerDauProvider);
-registry.register(avgJoinsPerDauProvider);
+registry.register(avgPlaytimeProvider);
+registry.register(avgJoinsProvider);
 registry.register(revenueProvider);
-registry.register(arpdauProvider);
+registry.register(arpuProvider);

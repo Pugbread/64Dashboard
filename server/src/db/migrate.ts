@@ -61,6 +61,16 @@ const migrations = [
       ALTER TABLE games ADD COLUMN IF NOT EXISTS universe_id TEXT;
     `,
   },
+  {
+    name: '003_add_indexes',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_sessions_game_started ON sessions(game_id, started_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_game_ended ON sessions(game_id, ended_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_game_open ON sessions(game_id) WHERE ended_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_purchases_game_created ON purchases(game_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_custom_events_game_created ON custom_events(game_id, created_at);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<void> {

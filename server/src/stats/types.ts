@@ -1,16 +1,54 @@
 import { Pool } from 'pg';
 
-export type Interval = 'hourly' | 'daily' | 'weekly';
+// ── Ranges ──────────────────────────────────────────────────
+export type Range = '1h' | '6h' | '24h' | '3d' | '7d' | '30d';
 
+export const RANGE_MS: Record<Range, number> = {
+  '1h':  60 * 60 * 1000,
+  '6h':  6 * 60 * 60 * 1000,
+  '24h': 24 * 60 * 60 * 1000,
+  '3d':  3 * 24 * 60 * 60 * 1000,
+  '7d':  7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000,
+};
+
+// ── Intervals ───────────────────────────────────────────────
+export type Interval = '1m' | '5m' | '30m' | '1h' | '3h' | '7h' | '1d';
+
+export const INTERVAL_SECONDS: Record<Interval, number> = {
+  '1m':  60,
+  '5m':  300,
+  '30m': 1800,
+  '1h':  3600,
+  '3h':  10800,
+  '7h':  25200,
+  '1d':  86400,
+};
+
+/** Which intervals are valid for each range */
+export const INTERVAL_AVAILABILITY: Record<Range, Interval[]> = {
+  '1h':  ['1m', '5m', '30m'],
+  '6h':  ['5m', '30m', '1h', '3h'],
+  '24h': ['30m', '1h', '3h', '7h'],
+  '3d':  ['30m', '1h', '3h', '7h', '1d'],
+  '7d':  ['1h', '3h', '7h', '1d'],
+  '30d': ['3h', '7h', '1d'],
+};
+
+/** Default interval for each range */
+export const DEFAULT_INTERVAL: Record<Range, Interval> = {
+  '1h':  '1m',
+  '6h':  '5m',
+  '24h': '1h',
+  '3d':  '3h',
+  '7d':  '1d',
+  '30d': '1d',
+};
+
+// ── Data types ──────────────────────────────────────────────
 export interface TimeSeriesPoint {
-  date: string; // ISO date string YYYY-MM-DD or YYYY-MM-DDTHH:00
+  date: string;
   value: number;
-}
-
-export interface ScalarResult {
-  type: 'scalar';
-  value: number;
-  previousValue?: number; // For calculating % change
 }
 
 export interface TimeSeriesResult {
@@ -18,56 +56,39 @@ export interface TimeSeriesResult {
   data: TimeSeriesPoint[];
 }
 
-export type StatResult = ScalarResult | TimeSeriesResult;
+export type StatResult = TimeSeriesResult;
 
-/**
- * Category definitions.
- * To add a new category, simply use any string as the category value in your provider.
- * The frontend will automatically create a new section for it.
- */
 export type StatCategory = string;
 
 export interface StatProvider {
-  /** Unique identifier, e.g. "dau" */
   id: string;
-  /** Display name, e.g. "Daily Active Users" */
   name: string;
-  /** Category for UI grouping — use any string (e.g. 'engagement', 'revenue', 'retention') */
   category: StatCategory;
-  /** How to render: scalar = KPI card, timeseries = chart */
-  resultType: 'scalar' | 'timeseries';
-  /** Optional unit for display (e.g. "minutes", "R$", "%") */
   unit?: string;
-  /** Optional format hint for the frontend */
   format?: 'number' | 'duration' | 'currency' | 'percentage';
-  /** Execute the stat query */
-  query(pool: Pool, gameId: string, from: Date, to: Date, interval?: Interval): Promise<StatResult>;
+  query(pool: Pool, gameId: string, from: Date, to: Date, interval: Interval): Promise<TimeSeriesResult>;
+}
+
+// ── SQL helpers ─────────────────────────────────────────────
+
+/**
+ * Returns a SQL expression that truncates a timestamp column to the
+ * given interval bucket.  Uses epoch-math for sub-day and multi-hour
+ * intervals; DATE() for 1 day.
+ */
+export function intervalTrunc(column: string, interval: Interval): string {
+  if (interval === '1d') return `DATE(${column})`;
+  const secs = INTERVAL_SECONDS[interval];
+  return `to_timestamp(floor(extract(epoch from ${column}) / ${secs}) * ${secs})`;
 }
 
 /**
- * Helper: returns the SQL date_trunc expression and output format for a given interval.
+ * Format a DB row date to a string the frontend can parse.
  */
-export function intervalTrunc(column: string, interval: Interval = 'daily'): string {
-  switch (interval) {
-    case 'hourly':
-      return `date_trunc('hour', ${column})`;
-    case 'weekly':
-      return `date_trunc('week', ${column})`;
-    case 'daily':
-    default:
-      return `DATE(${column})`;
-  }
-}
-
-/**
- * Helper: format a DB row date value to a string based on interval.
- */
-export function formatRowDate(date: any, interval: Interval = 'daily'): string {
+export function formatRowDate(date: any, interval: Interval): string {
   if (date instanceof Date) {
-    if (interval === 'hourly') {
-      return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
-    }
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    if (interval === '1d') return date.toISOString().split('T')[0];
+    return date.toISOString();
   }
   return String(date);
 }

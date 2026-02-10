@@ -12,7 +12,7 @@ import { TimeSeriesResult, ProviderMeta } from '../hooks/useStats';
 interface TimeSeriesChartProps {
   provider: ProviderMeta;
   result: TimeSeriesResult;
-  interval?: string;
+  interval: string;
 }
 
 const CATEGORY_STROKES: Record<string, string> = {
@@ -21,59 +21,39 @@ const CATEGORY_STROKES: Record<string, string> = {
   retention: '#888888',
 };
 
-const INTERVAL_LABELS: Record<string, string> = {
-  hourly: 'Hourly',
-  daily: 'Daily',
-  weekly: 'Weekly',
-};
-
-function formatDate(dateStr: string, interval: string = 'daily'): string {
-  if (interval === 'hourly') {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-      ' ' +
-      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
-  if (interval === 'weekly') {
+function formatTick(dateStr: string, interval: string): string {
+  if (interval === '1d') {
     const d = new Date(dateStr + 'T00:00:00');
-    if (isNaN(d.getTime())) return dateStr;
-    return 'W ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
-  const d = new Date(dateStr + 'T00:00:00');
+  const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (['1m', '5m', '30m', '1h'].includes(interval)) {
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function formatTooltipLabel(dateStr: string, interval: string = 'daily'): string {
-  if (interval === 'hourly') {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) +
-      ' at ' +
-      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  }
-  if (interval === 'weekly') {
+function formatTooltipLabel(dateStr: string, interval: string): string {
+  if (interval === '1d') {
     const d = new Date(dateStr + 'T00:00:00');
-    if (isNaN(d.getTime())) return dateStr;
-    const end = new Date(d);
-    end.setDate(end.getDate() + 6);
-    return 'Week of ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-      ' - ' + end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' });
   }
-  const d = new Date(dateStr + 'T00:00:00');
+  const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' +
+    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-function formatTooltipValue(value: number, format?: string, unit?: string): string {
+function formatValue(value: number, format?: string, unit?: string): string {
   if (format === 'duration') return `${value.toFixed(1)} min`;
   if (format === 'currency') return `${unit || 'R$'} ${value.toLocaleString()}`;
   if (format === 'percentage') return `${value.toFixed(1)}%`;
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-export default function TimeSeriesChart({ provider, result, interval = 'daily' }: TimeSeriesChartProps) {
+export default function TimeSeriesChart({ provider, result, interval }: TimeSeriesChartProps) {
   const stroke = CATEGORY_STROKES[provider.category] || '#FFFFFF';
 
   if (result.data.length === 0) {
@@ -82,28 +62,32 @@ export default function TimeSeriesChart({ provider, result, interval = 'daily' }
         <p className="text-[12px] text-text-muted font-medium uppercase tracking-wide mb-4">
           {provider.name}
         </p>
-        <div className="h-48 flex items-center justify-center text-text-muted text-sm">
+        <div className="h-44 flex items-center justify-center text-text-muted text-sm">
           No data available
         </div>
       </div>
     );
   }
 
+  // Compute summary value (latest point)
+  const latest = result.data[result.data.length - 1];
+  const summaryValue = formatValue(latest.value, provider.format, provider.unit);
+
   return (
     <div className="card card-hover p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-start justify-between mb-1">
         <p className="text-[12px] text-text-muted font-medium uppercase tracking-wide">
           {provider.name}
         </p>
-        <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
-          {INTERVAL_LABELS[interval] || interval}
-        </span>
       </div>
-      <div className="h-48">
+      <p className="text-[22px] font-bold text-white tracking-tight leading-none mb-4">
+        {summaryValue}
+      </p>
+      <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={result.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+          <AreaChart data={result.data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
             <defs>
-              <linearGradient id={`grad-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={`g-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={stroke} stopOpacity={0.1} />
                 <stop offset="100%" stopColor={stroke} stopOpacity={0} />
               </linearGradient>
@@ -111,14 +95,15 @@ export default function TimeSeriesChart({ provider, result, interval = 'daily' }
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
             <XAxis
               dataKey="date"
-              tickFormatter={(d) => formatDate(d, interval)}
-              tick={{ fill: '#555', fontSize: 11 }}
+              tickFormatter={(d) => formatTick(d, interval)}
+              tick={{ fill: '#555', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
+              minTickGap={40}
             />
             <YAxis
-              tick={{ fill: '#555', fontSize: 11 }}
+              tick={{ fill: '#555', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
@@ -130,10 +115,7 @@ export default function TimeSeriesChart({ provider, result, interval = 'daily' }
                 color: '#fff',
                 fontSize: '12px',
               }}
-              formatter={(value: number) => [
-                formatTooltipValue(value, provider.format, provider.unit),
-                provider.name,
-              ]}
+              formatter={(value: number) => [formatValue(value, provider.format, provider.unit), provider.name]}
               labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
             />
             <Area
@@ -141,7 +123,7 @@ export default function TimeSeriesChart({ provider, result, interval = 'daily' }
               dataKey="value"
               stroke={stroke}
               strokeWidth={1.5}
-              fill={`url(#grad-${provider.id})`}
+              fill={`url(#g-${provider.id})`}
               dot={false}
               activeDot={{ r: 3, fill: stroke, stroke: '#000', strokeWidth: 1 }}
             />

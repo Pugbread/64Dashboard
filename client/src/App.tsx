@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import CategoryPage from './pages/CategoryPage';
 import Games from './pages/Games';
+import { useMeta } from './hooks/useMeta';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
@@ -32,6 +33,7 @@ export default function App() {
     }
   }, []);
 
+  // Not authenticated
   if (!token) {
     return (
       <Routes>
@@ -41,14 +43,36 @@ export default function App() {
     );
   }
 
+  return <AuthenticatedApp onLogout={handleLogout} />;
+}
+
+function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
+  const { meta, loading } = useMeta();
+
+  if (loading || !meta) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-text-muted text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  const categories = meta.categories;
+  const defaultCategory = categories[0] || 'engagement';
+
   return (
     <div className="min-h-screen bg-black">
-      <Sidebar onLogout={handleLogout} />
+      <Sidebar categories={categories} onLogout={onLogout} />
       <main className="ml-[220px] p-6">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          {/* Category pages */}
+          {categories.map((cat) => (
+            <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} />} />
+          ))}
           <Route path="/games" element={<Games />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Default redirect to first category */}
+          <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
+          <Route path="*" element={<Navigate to={`/${defaultCategory}`} replace />} />
         </Routes>
       </main>
     </div>

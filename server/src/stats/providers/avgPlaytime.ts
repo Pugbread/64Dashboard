@@ -1,9 +1,9 @@
 import { Pool } from 'pg';
 import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate } from '../types';
 
-export const avgSessionTimeProvider: StatProvider = {
-  id: 'avg_session_time',
-  name: 'Avg Session Time',
+export const avgPlaytimeProvider: StatProvider = {
+  id: 'avg_playtime',
+  name: 'Avg Playtime per User',
   category: 'engagement',
   unit: 'min',
   format: 'duration',
@@ -12,7 +12,8 @@ export const avgSessionTimeProvider: StatProvider = {
     const trunc = intervalTrunc('started_at', interval);
     const { rows } = await pool.query(
       `SELECT ${trunc} as bucket,
-              AVG(EXTRACT(EPOCH FROM (COALESCE(ended_at, NOW()) - started_at)) / 60.0) as value
+              SUM(EXTRACT(EPOCH FROM (COALESCE(ended_at, NOW()) - started_at)) / 60.0) /
+                NULLIF(COUNT(DISTINCT player_id), 0) as value
        FROM sessions
        WHERE game_id = $1 AND started_at >= $2 AND started_at < $3
        GROUP BY bucket ORDER BY bucket ASC`,
@@ -20,7 +21,7 @@ export const avgSessionTimeProvider: StatProvider = {
     );
     return {
       type: 'timeseries',
-      data: rows.map((r) => ({ date: formatRowDate(r.bucket, interval), value: Math.round(Number(r.value) * 100) / 100 })),
+      data: rows.map((r) => ({ date: formatRowDate(r.bucket, interval), value: Math.round(Number(r.value || 0) * 100) / 100 })),
     };
   },
 };

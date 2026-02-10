@@ -1,85 +1,86 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db/pool';
 import { registry } from '../stats/registry';
-import { Interval } from '../stats/types';
+import {
+  Range, Interval, RANGE_MS,
+  INTERVAL_AVAILABILITY, DEFAULT_INTERVAL,
+} from '../stats/types';
 
 const router = Router();
 
-const VALID_INTERVALS: Interval[] = ['hourly', 'daily', 'weekly'];
+const VALID_RANGES: Range[] = ['1h', '6h', '24h', '3d', '7d', '30d'];
+const VALID_INTERVALS: Interval[] = ['1m', '5m', '30m', '1h', '3h', '7h', '1d'];
 
-// GET /api/stats/providers - List available stat providers
-router.get('/providers', (_req: Request, res: Response) => {
+// GET /api/stats/meta — categories, providers, interval rules
+router.get('/meta', (_req: Request, res: Response) => {
   res.json({
-    providers: registry.getProviderMeta(),
     categories: registry.getCategories(),
+    providers: registry.getProviderMeta(),
+    ranges: VALID_RANGES,
+    intervals: VALID_INTERVALS,
+    intervalAvailability: INTERVAL_AVAILABILITY,
+    defaultIntervals: DEFAULT_INTERVAL,
   });
 });
 
-// GET /api/stats/:gameId - Get stats for a game
-router.get('/:gameId', async (req: Request, res: Response) => {
+// GET /api/stats/:gameId/ccu — lightweight concurrent-user count
+router.get('/:gameId/ccu', async (req: Request, res: Response) => {
   try {
-    const gameId = req.params.gameId as string;
-    const range = String(req.query.range || '7d');
-    const metricsRaw = req.query.metrics ? String(req.query.metrics) : undefined;
-    const intervalRaw = String(req.query.interval || 'daily');
-    const interval: Interval = VALID_INTERVALS.includes(intervalRaw as Interval)
-      ? (intervalRaw as Interval)
-      : 'daily';
-
-    // Parse time range
-    const now = new Date();
-    let from: Date;
-    const to = now;
-
-    switch (range) {
-      case '1d':
-      case 'today':
-        from = new Date(now);
-        from.setHours(0, 0, 0, 0);
-        break;
-      case '7d':
-        from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case '90d':
-        from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    }
-
-    // Parse requested metrics (comma-separated) or use all
-    const metricIds = metricsRaw
-      ? metricsRaw.split(',').map((m) => m.trim())
-      : undefined;
-
-    // Verify game exists
-    const { rows: gameRows } = await pool.query(
-      'SELECT id FROM games WHERE id = $1',
+    const gameId = String(req.params.gameId);
+    const { rows } = await pool.query(
+      `SELECT COUNT(DISTINCT player_id) as value
+       FROM sessions
+       WHERE game_id = $1 AND ended_at IS NULL`,
       [gameId]
     );
+    res.json({ ccu: Number(rows[0]?.value || 0) });
+  } catch (error) {
+    console.error('CCU error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
-    if (gameRows.length === 0) {
-      res.status(404).json({ error: 'Game not found' });
-      return;
+// GET /api/stats/:gameId/:category — stats for one category
+router.get('/:gameId/:category', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const category = String(req.params.category);
+    const rangeRaw = String(req.query.range || '7d');
+    const range: Range = VALID_RANGES.includes(rangeRaw as Range) ? (rangeRaw as Range) : '7d';
+
+    // Resolve interval (validate against availability)
+    let intervalRaw = req.query.interval ? String(req.query.interval) : undefined;
+    const available = INTERVAL_AVAILABILITY[range];
+    let interval: Interval;
+    if (intervalRaw && VALID_INTERVALS.includes(intervalRaw as Interval) && available.includes(intervalRaw as Interval)) {
+      interval = intervalRaw as Interval;
+    } else {
+      interval = DEFAULT_INTERVAL[range];
     }
 
-    const results = await registry.queryMultiple(pool, gameId, from, to, metricIds, interval);
+    // Compute time window
+    const to = new Date();
+    const from = new Date(to.getTime() - RANGE_MS[range]);
+
+    // Verify game
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    // Verify category
+    const providers = registry.getProviderMeta(category);
+    if (providers.length === 0) { res.status(404).json({ error: 'Unknown category' }); return; }
+
+    const metrics = await registry.queryCategory(pool, gameId, category, from, to, interval);
 
     res.json({
-      gameId,
-      range: range || '7d',
-      interval,
+      gameId, category, range, interval,
       from: from.toISOString(),
       to: to.toISOString(),
-      metrics: results,
-      providers: registry.getProviderMeta(),
-      categories: registry.getCategories(),
+      providers,
+      metrics,
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    console.error('Stats error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

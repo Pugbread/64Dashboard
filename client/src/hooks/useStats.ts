@@ -1,15 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getStats } from '../api/client';
+import { getCategoryStats } from '../api/client';
 
 export interface TimeSeriesPoint {
   date: string;
   value: number;
-}
-
-export interface ScalarResult {
-  type: 'scalar';
-  value: number;
-  previousValue?: number;
 }
 
 export interface TimeSeriesResult {
@@ -17,39 +11,35 @@ export interface TimeSeriesResult {
   data: TimeSeriesPoint[];
 }
 
-export type StatResult = ScalarResult | TimeSeriesResult;
-
 export interface ProviderMeta {
   id: string;
   name: string;
   category: string;
-  resultType: string;
   unit?: string;
   format?: string;
 }
 
-export interface StatsResponse {
+export interface CategoryStatsResponse {
   gameId: string;
+  category: string;
   range: string;
   interval: string;
   from: string;
   to: string;
-  metrics: Record<string, StatResult>;
   providers: ProviderMeta[];
-  categories: string[];
+  metrics: Record<string, TimeSeriesResult>;
 }
 
-export function useStats(gameId: string | null, range: string, interval: string = 'daily') {
-  const [data, setData] = useState<StatsResponse | null>(null);
+export function useCategoryStats(gameId: string | null, category: string, range: string, interval: string) {
+  const [data, setData] = useState<CategoryStatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
     if (!gameId) return;
-
     try {
       setLoading(true);
-      const { data: stats } = await getStats(gameId, range, interval);
+      const { data: stats } = await getCategoryStats(gameId, category, range, interval);
       setData(stats);
       setError(null);
     } catch (err: any) {
@@ -57,11 +47,9 @@ export function useStats(gameId: string | null, range: string, interval: string 
     } finally {
       setLoading(false);
     }
-  }, [gameId, range, interval]);
+  }, [gameId, category, range, interval]);
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   return { data, loading, error, refetch: fetchStats };
 }
