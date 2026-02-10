@@ -70,14 +70,16 @@ export default function CategoryPage({ category }: { category: string }) {
   }, [range]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">{CATEGORY_LABELS[category] || category}</h1>
-          <p className="text-text-secondary text-sm mt-0.5">Analytics overview</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">
+            {CATEGORY_LABELS[category] || category}
+          </h1>
+          <p className="text-text-secondary text-[13px] mt-1">Analytics overview</p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <GameSelector games={games} selectedGameId={selectedGameId} onSelect={setSelectedGameId} />
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
           <Dropdown value={interval} options={getAvailableIntervals(range)} onChange={(v) => setInterval(v as Interval)} />
@@ -86,33 +88,33 @@ export default function CategoryPage({ category }: { category: string }) {
 
       {/* CCU banner */}
       {category === 'engagement' && ccu !== null && (
-        <div className="card p-4 flex items-center gap-3">
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent-blue/10 flex items-center justify-center">
-              <Users size={16} className="text-accent-blue" />
+        <div className="card p-5 flex items-center gap-4">
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-btn bg-accent-muted flex items-center justify-center">
+              <Users size={18} className="text-accent" />
             </div>
             <div>
-              <p className="text-text-secondary text-xs font-medium">Concurrent Users</p>
-              <p className="text-white text-xl font-bold tracking-tight">{ccu.toLocaleString()}</p>
+              <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">Concurrent Users</p>
+              <p className="text-white text-2xl font-bold tracking-tight">{ccu.toLocaleString()}</p>
             </div>
-            <div className="w-2 h-2 rounded-full bg-accent-blue animate-pulse ml-1" />
+            <div className="w-2 h-2 rounded-full bg-accent animate-pulse ml-1" />
           </div>
         </div>
       )}
 
       {/* Charts */}
       {!selectedGameId ? (
-        <div className="card p-12 text-center">
+        <div className="card p-16 text-center">
           <div className="relative z-10 text-text-secondary text-sm">Select a game to view analytics</div>
         </div>
       ) : loading ? (
-        <div className="text-text-secondary text-sm py-12 text-center">Loading analytics...</div>
+        <div className="text-text-secondary text-sm py-16 text-center">Loading analytics...</div>
       ) : stats?.providers.length === 0 ? (
-        <div className="card p-12 text-center">
+        <div className="card p-16 text-center">
           <div className="relative z-10 text-text-secondary text-sm">No data available for this period</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {stats?.providers.map((p: ProviderMeta) => {
             const result: TimeSeriesResult = stats.metrics[p.id] || { type: 'timeseries', data: [] };
             return <TimeSeriesChart key={p.id} provider={p} result={result} interval={interval} />;

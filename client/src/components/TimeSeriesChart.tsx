@@ -62,9 +62,9 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
 
   if (result.data.length === 0) {
     return (
-      <div className="card p-5">
+      <div className="card p-7">
         <div className="relative z-10">
-          <p className="text-[13px] text-text-secondary font-medium mb-4">{provider.name}</p>
+          <p className="text-[12px] text-text-secondary font-medium mb-6">{provider.name}</p>
           <div className="h-52 flex items-center justify-center text-text-muted text-sm">
             No data available
           </div>
@@ -73,25 +73,26 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
     );
   }
 
-  // Compute AVERAGE of all data points for the title
+  // Compute AVERAGE of all data points for the headline
   const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
   const displayValue = formatValue(avg, provider.format, provider.unit);
 
   return (
-    <div className="card card-hover p-5">
+    <div className="card card-hover p-7">
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-[13px] text-text-secondary font-medium">{provider.name}</p>
-        </div>
-        <p className="text-[28px] font-bold text-white tracking-tight leading-none mb-5">
+        {/* Header */}
+        <p className="text-[12px] text-text-secondary font-medium mb-1">{provider.name}</p>
+        <p className="text-[28px] font-bold text-white tracking-tight leading-none mb-6">
           {displayValue}
         </p>
+
+        {/* Chart */}
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={result.data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
               <defs>
                 <linearGradient id={`g-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                  <stop offset="0%" stopColor={color} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -99,21 +100,22 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
               <XAxis
                 dataKey="date"
                 tickFormatter={(d) => formatTick(d, interval)}
-                tick={{ fill: '#6B6B76', fontSize: 10 }}
+                tick={{ fill: '#64748B', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
-              <YAxis tick={{ fill: '#6B6B76', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#64748B', fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#0C0F1A',
-                  border: '1px solid #1A1D2E',
-                  borderRadius: '10px',
+                  backgroundColor: '#121214',
+                  border: '1px solid #1E1E22',
+                  borderRadius: '8px',
                   color: '#fff',
                   fontSize: '12px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  padding: '10px 14px',
                 }}
                 formatter={(value: number) => [formatValue(value, provider.format, provider.unit), provider.name]}
                 labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
@@ -125,7 +127,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 strokeWidth={2}
                 fill={`url(#g-${provider.id})`}
                 dot={false}
-                activeDot={{ r: 4, fill: color, stroke: '#000', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

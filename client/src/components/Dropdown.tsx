@@ -19,7 +19,7 @@ export default function Dropdown({ value, options, onChange, className = '' }: D
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-bg-card border border-border rounded-xl pl-3 pr-8 py-2 text-white text-xs font-medium focus:outline-none focus:border-accent-blue/40 cursor-pointer transition-colors"
+        className="appearance-none bg-bg-card border border-border rounded-btn pl-3 pr-8 py-2 text-white text-xs font-medium focus:outline-none focus:border-accent/40 cursor-pointer transition-colors shadow-card"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value} disabled={o.disabled}>

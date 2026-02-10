@@ -13,7 +13,7 @@ export default function GameSelector({ games, selectedGameId, onSelect }: GameSe
       <select
         value={selectedGameId || ''}
         onChange={(e) => onSelect(e.target.value)}
-        className="appearance-none bg-bg-card border border-border rounded-xl px-4 py-2 pr-9 text-white text-sm font-medium focus:outline-none focus:border-accent-blue/40 cursor-pointer min-w-[200px] transition-colors"
+        className="appearance-none bg-bg-card border border-border rounded-btn px-4 py-2 pr-9 text-white text-sm font-medium focus:outline-none focus:border-accent/40 cursor-pointer min-w-[200px] transition-colors shadow-card"
       >
         <option value="" disabled>Select a game</option>
         {games.map((g) => (
