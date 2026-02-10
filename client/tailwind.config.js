@@ -39,8 +39,8 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       borderRadius: {
-        card: '8px',
-        btn: '6px',
+        card: '4px',
+        btn: '3px',
         pill: '20px',
       },
       boxShadow: {

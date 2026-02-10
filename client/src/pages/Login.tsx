@@ -30,10 +30,8 @@ export default function Login({ onLogin }: LoginProps) {
 
   return (
     <div className="min-h-screen bg-bg-primary flex items-center justify-center relative overflow-hidden">
-      {/* Atmospheric glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-accent/[0.05] rounded-full blur-[150px]" />
-        <div className="absolute top-1/3 right-1/3 w-[400px] h-[400px] bg-accent/[0.03] rounded-full blur-[100px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-sm">

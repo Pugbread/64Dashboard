@@ -1,8 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, Settings } from 'lucide-react';
+import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown } from 'lucide-react';
+import { Game } from '../hooks/useGames';
 
 interface SidebarProps {
   categories: string[];
+  games: Game[];
+  selectedGameId: string | null;
+  onSelectGame: (id: string) => void;
   onLogout: () => void;
 }
 
@@ -25,7 +29,9 @@ function getCategoryLabel(cat: string) {
   return CATEGORY_LABELS[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
-export default function Sidebar({ categories, onLogout }: SidebarProps) {
+export default function Sidebar({ categories, games, selectedGameId, onSelectGame, onLogout }: SidebarProps) {
+  const selectedGame = games.find((g) => g.id === selectedGameId);
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-btn text-[13px] transition-all duration-200 ${
       isActive
@@ -36,12 +42,42 @@ export default function Sidebar({ categories, onLogout }: SidebarProps) {
   return (
     <aside className="w-[240px] h-screen bg-bg-primary border-r border-border flex flex-col fixed left-0 top-0 z-50">
       {/* Logo */}
-      <div className="px-6 pt-7 pb-6">
+      <div className="px-6 pt-7 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-btn bg-gradient-accent flex items-center justify-center shadow-glow">
             <BarChart3 size={16} className="text-white" />
           </div>
           <h1 className="text-[15px] font-bold text-white tracking-tight">64's Dash</h1>
+        </div>
+      </div>
+
+      {/* Game selector */}
+      <div className="px-4 pb-5">
+        <div className="bg-bg-card border border-border rounded-card p-3">
+          {/* Game icon */}
+          <div className="flex justify-center mb-2.5">
+            {selectedGame?.icon_url ? (
+              <img src={selectedGame.icon_url} alt={selectedGame.name} className="w-11 h-11 rounded-btn object-cover" />
+            ) : (
+              <div className="w-11 h-11 rounded-btn bg-bg-elevated flex items-center justify-center">
+                <Gamepad2 size={18} className="text-text-muted" />
+              </div>
+            )}
+          </div>
+          {/* Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedGameId || ''}
+              onChange={(e) => onSelectGame(e.target.value)}
+              className="appearance-none w-full bg-bg-elevated border border-border rounded-btn px-3 py-2 pr-8 text-white text-xs font-medium focus:outline-none focus:border-accent/40 cursor-pointer transition-colors text-center"
+            >
+              <option value="" disabled>Select game</option>
+              {games.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          </div>
         </div>
       </div>
 

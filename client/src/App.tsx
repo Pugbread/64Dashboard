@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import CategoryPage from './pages/CategoryPage';
 import Games from './pages/Games';
 import { useMeta } from './hooks/useMeta';
+import { useGames } from './hooks/useGames';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
@@ -47,9 +48,18 @@ export default function App() {
 }
 
 function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
-  const { meta, loading } = useMeta();
+  const { meta, loading: metaLoading } = useMeta();
+  const { games } = useGames();
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
-  if (loading || !meta) {
+  // Auto-select first game
+  useEffect(() => {
+    if (games.length > 0 && !selectedGameId) {
+      setSelectedGameId(games[0].id);
+    }
+  }, [games, selectedGameId]);
+
+  if (metaLoading || !meta) {
     return (
       <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <p className="text-text-muted text-sm">Loading...</p>
@@ -67,15 +77,19 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         <div className="absolute top-[-10%] left-[30%] w-[700px] h-[500px] bg-accent/[0.03] rounded-full blur-[150px]" />
         <div className="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] bg-accent/[0.02] rounded-full blur-[120px]" />
       </div>
-      <Sidebar categories={categories} onLogout={onLogout} />
+      <Sidebar
+        categories={categories}
+        games={games}
+        selectedGameId={selectedGameId}
+        onSelectGame={setSelectedGameId}
+        onLogout={onLogout}
+      />
       <main className="ml-[240px] p-8 relative z-10">
         <Routes>
-          {/* Category pages */}
           {categories.map((cat) => (
-            <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} />} />
+            <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} selectedGameId={selectedGameId} />} />
           ))}
           <Route path="/games" element={<Games />} />
-          {/* Default redirect to first category */}
           <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
           <Route path="*" element={<Navigate to={`/${defaultCategory}`} replace />} />
         </Routes>

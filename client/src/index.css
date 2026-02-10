@@ -17,7 +17,7 @@
 
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1E1E22; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: #1E1E22; border-radius: 2px; }
   ::-webkit-scrollbar-thumb:hover { background: #2A2A30; }
 
   ::selection { background: rgba(59, 130, 246, 0.3); color: #fff; }
@@ -34,7 +34,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: 8px;
+    border-radius: 4px;
     background: linear-gradient(145deg, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
     pointer-events: none;
   }
@@ -72,9 +72,7 @@
            placeholder-text-muted transition-colors;
   }
 
-  /* Category header labels */
   .category-label {
     @apply text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted;
-    letter-spacing: 0.14em;
   }
 }

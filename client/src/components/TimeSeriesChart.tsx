@@ -73,20 +73,16 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
     );
   }
 
-  // Compute AVERAGE of all data points for the headline
   const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
   const displayValue = formatValue(avg, provider.format, provider.unit);
 
   return (
     <div className="card card-hover p-7">
       <div className="relative z-10">
-        {/* Header */}
         <p className="text-[12px] text-text-secondary font-medium mb-1">{provider.name}</p>
         <p className="text-[28px] font-bold text-white tracking-tight leading-none mb-6">
           {displayValue}
         </p>
-
-        {/* Chart */}
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={result.data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
@@ -111,7 +107,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 contentStyle={{
                   backgroundColor: '#121214',
                   border: '1px solid #1E1E22',
-                  borderRadius: '8px',
+                  borderRadius: '4px',
                   color: '#fff',
                   fontSize: '12px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',

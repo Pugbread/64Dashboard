@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useGames } from '../hooks/useGames';
 import { useCategoryStats, Range, Interval, ProviderMeta, TimeSeriesResult } from '../hooks/useStats';
 import { useCCU } from '../hooks/useCCU';
-import GameSelector from '../components/GameSelector';
 import Dropdown from '../components/Dropdown';
 import TimeSeriesChart from '../components/TimeSeriesChart';
 import { Users } from 'lucide-react';
@@ -50,17 +48,16 @@ function getAvailableIntervals(range: string) {
     }));
 }
 
-export default function CategoryPage({ category }: { category: string }) {
-  const { games } = useGames();
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+interface CategoryPageProps {
+  category: string;
+  selectedGameId: string | null;
+}
+
+export default function CategoryPage({ category, selectedGameId }: CategoryPageProps) {
   const [range, setRange] = useState<Range>('24h');
   const [interval, setInterval] = useState<Interval>('1h');
   const { data: stats, loading } = useCategoryStats(selectedGameId, category, range, interval);
   const ccu = useCCU(category === 'engagement' ? selectedGameId : null);
-
-  useEffect(() => {
-    if (games.length > 0 && !selectedGameId) setSelectedGameId(games[0].id);
-  }, [games, selectedGameId]);
 
   useEffect(() => {
     const available = getAvailableIntervals(range);
@@ -80,7 +77,6 @@ export default function CategoryPage({ category }: { category: string }) {
           <p className="text-text-secondary text-[13px] mt-1">Analytics overview</p>
         </div>
         <div className="flex items-center gap-3">
-          <GameSelector games={games} selectedGameId={selectedGameId} onSelect={setSelectedGameId} />
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
           <Dropdown value={interval} options={getAvailableIntervals(range)} onChange={(v) => setInterval(v as Interval)} />
         </div>
