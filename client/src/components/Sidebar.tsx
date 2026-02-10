@@ -53,19 +53,19 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
 
       {/* Game selector */}
       <div className="px-4 pb-5">
-        <div className="bg-bg-card border border-border rounded-card p-3">
-          {/* Game icon */}
-          <div className="flex justify-center mb-2.5">
+        <div className="bg-bg-card border border-border rounded-card overflow-hidden">
+          {/* Game icon — full width, no stretch */}
+          <div className="w-full aspect-square bg-bg-elevated">
             {selectedGame?.icon_url ? (
-              <img src={selectedGame.icon_url} alt={selectedGame.name} className="w-11 h-11 rounded-btn object-cover" />
+              <img src={selectedGame.icon_url} alt={selectedGame.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-11 h-11 rounded-btn bg-bg-elevated flex items-center justify-center">
-                <Gamepad2 size={18} className="text-text-muted" />
+              <div className="w-full h-full flex items-center justify-center">
+                <Gamepad2 size={28} className="text-text-muted" />
               </div>
             )}
           </div>
           {/* Dropdown */}
-          <div className="relative">
+          <div className="relative p-2.5">
             <select
               value={selectedGameId || ''}
               onChange={(e) => onSelectGame(e.target.value)}
@@ -76,7 +76,7 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
-            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+            <ChevronDown size={12} className="absolute right-5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           </div>
         </div>
       </div>

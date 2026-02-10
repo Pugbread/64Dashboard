@@ -69,14 +69,12 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
   return (
     <div className="space-y-7">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            {CATEGORY_LABELS[category] || category}
-          </h1>
-          <p className="text-text-secondary text-[13px] mt-1">Analytics overview</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <div>
+        <h1 className="text-xl font-bold text-white tracking-tight">
+          {CATEGORY_LABELS[category] || category}
+        </h1>
+        <p className="text-text-secondary text-[13px] mt-1">Analytics overview</p>
+        <div className="flex items-center gap-3 mt-4">
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
           <Dropdown value={interval} options={getAvailableIntervals(range)} onChange={(v) => setInterval(v as Interval)} />
         </div>
