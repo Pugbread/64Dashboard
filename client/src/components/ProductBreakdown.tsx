@@ -1,10 +1,21 @@
+import { useState } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
-import { Package, ShoppingBag, Trophy } from 'lucide-react';
+import { Package, ShoppingBag, Trophy, ArrowUpDown } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
+  Tooltip,
+} from 'recharts';
 
 interface Props {
   gameId: string | null;
   range: string;
 }
+
+type SortField = 'revenue' | 'sales';
 
 function formatRobux(value: number): string {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2)}M`;
@@ -12,96 +23,181 @@ function formatRobux(value: number): string {
   return `R$ ${value.toLocaleString()}`;
 }
 
-const RANK_COLORS = [
-  'from-yellow-400 to-amber-500',   // #1 — gold
-  'from-slate-300 to-slate-400',     // #2 — silver
-  'from-amber-600 to-amber-700',     // #3 — bronze
-  'from-blue-400 to-blue-500',       // #4
-  'from-blue-400/70 to-blue-500/70', // #5
+const VERTEX_COLORS = [
+  '#FACC15', // gold
+  '#CBD5E1', // silver
+  '#D97706', // bronze
+  '#3B82F6', // blue
+  '#60A5FA', // light blue
 ];
 
-const RANK_BG = [
-  'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
-  'bg-slate-300/10 text-slate-300 border-slate-300/20',
-  'bg-amber-600/10 text-amber-500 border-amber-600/20',
-  'bg-blue-400/10 text-blue-400 border-blue-400/20',
-  'bg-blue-400/10 text-blue-400/70 border-blue-400/20',
-];
+/* ─── Radar / Pentagon chart for top 5 ─── */
 
-function TopFiveLeaderboard({ products }: { products: ProductEntry[] }) {
+function TopFiveRadar({ products, sortField }: { products: ProductEntry[]; sortField: SortField }) {
   const top5 = products.slice(0, 5);
   if (top5.length === 0) return null;
 
-  const maxRevenue = top5[0].revenue || 1;
+  const maxVal = Math.max(...top5.map((p) => (sortField === 'revenue' ? p.revenue : p.sales)), 1);
+
+  const radarData = top5.map((p, i) => ({
+    name: p.productName.length > 14 ? p.productName.slice(0, 13) + '...' : p.productName,
+    fullName: p.productName,
+    value: sortField === 'revenue' ? p.revenue : p.sales,
+    normalised: ((sortField === 'revenue' ? p.revenue : p.sales) / maxVal) * 100,
+    iconUrl: p.iconUrl,
+    rank: i + 1,
+    revenue: p.revenue,
+    sales: p.sales,
+  }));
 
   return (
     <div className="card p-6 sm:p-7">
       <div className="relative z-10">
-        <div className="flex items-center gap-2.5 mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
           <Trophy size={16} className="text-yellow-400" />
-          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">Top Products</p>
+          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
+            Top {top5.length} Products
+          </p>
+        </div>
+        <p className="text-text-muted text-[10px] mb-6">
+          Sorted by {sortField === 'revenue' ? 'revenue' : 'sales count'}
+        </p>
+
+        {/* Radar chart */}
+        <div className="w-full max-w-[420px] mx-auto aspect-square">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+              <PolarGrid
+                stroke="rgba(255,255,255,0.06)"
+                gridType="polygon"
+              />
+              <PolarAngleAxis
+                dataKey="name"
+                tick={({ x, y, payload, index }: any) => {
+                  const entry = radarData[index];
+                  const color = VERTEX_COLORS[index] || '#60A5FA';
+                  return (
+                    <g transform={`translate(${x},${y})`}>
+                      <text
+                        textAnchor="middle"
+                        dy={-8}
+                        fill={color}
+                        fontSize={10}
+                        fontWeight={600}
+                      >
+                        {payload.value}
+                      </text>
+                      <text
+                        textAnchor="middle"
+                        dy={6}
+                        fill="#64748B"
+                        fontSize={9}
+                      >
+                        {sortField === 'revenue'
+                          ? formatRobux(entry?.revenue ?? 0)
+                          : `${(entry?.sales ?? 0).toLocaleString()} sales`}
+                      </text>
+                    </g>
+                  );
+                }}
+              />
+              <Radar
+                dataKey="normalised"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                fill="#3B82F6"
+                fillOpacity={0.15}
+                dot={{
+                  r: 4,
+                  fill: '#3B82F6',
+                  stroke: '#080808',
+                  strokeWidth: 2,
+                }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#121214',
+                  border: '1px solid #1E1E22',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  fontSize: '12px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  padding: '10px 14px',
+                }}
+                formatter={(_val: any, _name: any, props: any) => {
+                  const d = props.payload;
+                  return [
+                    `${formatRobux(d.revenue)} | ${d.sales.toLocaleString()} sales`,
+                    d.fullName,
+                  ];
+                }}
+                labelFormatter={() => ''}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="space-y-3">
-          {top5.map((product, i) => {
-            const pct = maxRevenue > 0 ? (product.revenue / maxRevenue) * 100 : 0;
-            const isFirst = i === 0;
-
-            return (
-              <div
-                key={product.productId}
-                className={`
-                  relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-card border transition-all duration-300
-                  ${isFirst
-                    ? 'bg-bg-elevated border-yellow-400/15 shadow-[0_0_20px_rgba(250,204,21,0.04)]'
-                    : 'bg-bg-card border-border hover:border-border-accent/30'
-                  }
-                `}
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                {/* Rank badge */}
-                <div className={`w-8 h-8 shrink-0 rounded-btn flex items-center justify-center text-xs font-bold border ${RANK_BG[i] || RANK_BG[4]}`}>
-                  {i + 1}
-                </div>
-
-                {/* Product icon */}
-                <div className="w-10 h-10 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border">
-                  {product.iconUrl ? (
-                    <img src={product.iconUrl} alt={product.productName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package size={16} className="text-text-muted" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Name + bar */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-[13px] font-medium truncate mb-2">{product.productName}</p>
-                  <div className="h-1.5 w-full bg-bg-elevated rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${RANK_COLORS[i] || RANK_COLORS[4]} transition-all duration-700 ease-out`}
-                      style={{ width: `${Math.max(pct, 2)}%` }}
-                    />
+        {/* Legend below chart */}
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-4">
+          {top5.map((p, i) => (
+            <div key={p.productId} className="flex items-center gap-2">
+              <div className="w-6 h-6 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border">
+                {p.iconUrl ? (
+                  <img src={p.iconUrl} alt={p.productName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package size={10} className="text-text-muted" />
                   </div>
-                </div>
-
-                {/* Revenue + sales */}
-                <div className="text-right shrink-0">
-                  <p className="text-white text-sm font-bold tracking-tight">{formatRobux(product.revenue)}</p>
-                  <p className="text-text-muted text-[10px] font-medium mt-0.5">{product.sales.toLocaleString()} sale{product.sales !== 1 ? 's' : ''}</p>
-                </div>
+                )}
               </div>
-            );
-          })}
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: VERTEX_COLORS[i] || '#60A5FA' }}
+              >
+                #{i + 1} {p.productName.length > 18 ? p.productName.slice(0, 17) + '...' : p.productName}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function ProductTable({ products }: { products: ProductEntry[] }) {
+/* ─── Full product table with sortable columns ─── */
+
+function ProductTable({
+  products,
+  sortField,
+  onSortChange,
+}: {
+  products: ProductEntry[];
+  sortField: SortField;
+  onSortChange: (field: SortField) => void;
+}) {
   if (products.length === 0) return null;
+
+  const sorted = [...products].sort((a, b) =>
+    sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales
+  );
+
+  const thButton = (field: SortField, label: string, align: string) => (
+    <th
+      className={`px-4 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group ${align} ${
+        field === 'sales' ? 'pr-6 sm:pr-7' : ''
+      }`}
+      onClick={() => onSortChange(field)}
+    >
+      <span
+        className={`inline-flex items-center gap-1 ${
+          sortField === field ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'
+        }`}
+      >
+        {label}
+        <ArrowUpDown size={10} className={sortField === field ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} />
+      </span>
+    </th>
+  );
 
   return (
     <div className="card overflow-hidden">
@@ -117,17 +213,23 @@ function ProductTable({ products }: { products: ProductEntry[] }) {
           <table className="w-full text-left">
             <thead>
               <tr className="border-t border-b border-border">
-                <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Product</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Type</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right">Revenue</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right pr-6 sm:pr-7">Sales</th>
+                <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                  Product
+                </th>
+                <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                  Type
+                </th>
+                {thButton('revenue', 'Revenue', 'text-right')}
+                {thButton('sales', 'Sales', 'text-right')}
               </tr>
             </thead>
             <tbody>
-              {products.map((p, i) => (
+              {sorted.map((p, i) => (
                 <tr
                   key={p.productId}
-                  className={`border-b border-border/50 transition-colors hover:bg-white/[0.02] ${i === products.length - 1 ? 'border-b-0' : ''}`}
+                  className={`border-b border-border/50 transition-colors hover:bg-white/[0.02] ${
+                    i === sorted.length - 1 ? 'border-b-0' : ''
+                  }`}
                 >
                   <td className="px-6 sm:px-7 py-3.5">
                     <div className="flex items-center gap-3">
@@ -144,13 +246,13 @@ function ProductTable({ products }: { products: ProductEntry[] }) {
                     </div>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className={`
-                      inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-pill
-                      ${p.productType === 'gamepass'
-                        ? 'bg-purple-500/10 text-purple-400'
-                        : 'bg-accent/10 text-accent-light'
-                      }
-                    `}>
+                    <span
+                      className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-pill ${
+                        p.productType === 'gamepass'
+                          ? 'bg-purple-500/10 text-purple-400'
+                          : 'bg-accent/10 text-accent-light'
+                      }`}
+                    >
                       {p.productType === 'gamepass' ? 'Gamepass' : 'DevProduct'}
                     </span>
                   </td>
@@ -170,8 +272,11 @@ function ProductTable({ products }: { products: ProductEntry[] }) {
   );
 }
 
+/* ─── Main component ─── */
+
 export default function ProductBreakdown({ gameId, range }: Props) {
   const { data, loading } = useProductBreakdown(gameId, range);
+  const [sortField, setSortField] = useState<SortField>('revenue');
 
   if (!gameId) return null;
 
@@ -192,10 +297,15 @@ export default function ProductBreakdown({ gameId, range }: Props) {
     );
   }
 
+  // Sort products for the radar chart based on current sort field
+  const sortedProducts = [...data.products].sort((a, b) =>
+    sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales
+  );
+
   return (
     <div className="space-y-5">
-      <TopFiveLeaderboard products={data.products} />
-      <ProductTable products={data.products} />
+      <TopFiveRadar products={sortedProducts} sortField={sortField} />
+      <ProductTable products={data.products} sortField={sortField} onSortChange={setSortField} />
     </div>
   );
 }
