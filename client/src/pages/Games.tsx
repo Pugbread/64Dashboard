@@ -9,12 +9,12 @@ export default function Games() {
 
   return (
     <div className="space-y-7">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight">Games</h1>
           <p className="text-text-secondary text-[13px] mt-1">Manage tracked Roblox games</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 w-fit">
           <Plus size={14} />
           Add Game
         </button>

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown } from 'lucide-react';
+import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, X } from 'lucide-react';
 import { Game } from '../hooks/useGames';
 
 interface SidebarProps {
@@ -8,6 +8,8 @@ interface SidebarProps {
   selectedGameId: string | null;
   onSelectGame: (id: string) => void;
   onLogout: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -29,7 +31,7 @@ function getCategoryLabel(cat: string) {
   return CATEGORY_LABELS[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
-export default function Sidebar({ categories, games, selectedGameId, onSelectGame, onLogout }: SidebarProps) {
+export default function Sidebar({ categories, games, selectedGameId, onSelectGame, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const selectedGame = games.find((g) => g.id === selectedGameId);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -40,15 +42,31 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
     }`;
 
   return (
-    <aside className="w-[240px] h-screen bg-bg-primary border-r border-border flex flex-col fixed left-0 top-0 z-50">
+    <aside
+      className={`
+        w-[240px] h-screen bg-bg-primary border-r border-border flex flex-col fixed left-0 top-0 z-[60]
+        transition-transform duration-300 ease-out
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+      `}
+    >
       {/* Logo */}
-      <div className="px-6 pt-7 pb-4">
+      <div className="px-6 pt-7 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-btn bg-gradient-accent flex items-center justify-center shadow-glow">
             <BarChart3 size={16} className="text-white" />
           </div>
           <h1 className="text-[15px] font-bold text-white tracking-tight">64's Dash</h1>
         </div>
+        {/* Mobile close button */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden w-8 h-8 rounded-btn flex items-center justify-center text-text-muted hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {/* Game selector */}

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import CategoryPage from './pages/CategoryPage';
 import Games from './pages/Games';
 import { useMeta } from './hooks/useMeta';
 import { useGames } from './hooks/useGames';
+import { Menu } from 'lucide-react';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
@@ -50,14 +51,30 @@ export default function App() {
 function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const { meta, loading: metaLoading } = useMeta();
   const { games } = useGames();
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(() => {
+    return localStorage.getItem('selectedGameId');
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
-  // Auto-select first game
+  // Close sidebar on route change (mobile)
   useEffect(() => {
-    if (games.length > 0 && !selectedGameId) {
-      setSelectedGameId(games[0].id);
-    }
-  }, [games, selectedGameId]);
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Persist selected game to localStorage
+  const handleSelectGame = (id: string) => {
+    setSelectedGameId(id);
+    localStorage.setItem('selectedGameId', id);
+  };
+
+  // Auto-select first game if nothing saved or saved game no longer exists
+  useEffect(() => {
+    if (games.length === 0) return;
+    const savedId = selectedGameId;
+    if (savedId && games.find((g) => g.id === savedId)) return;
+    handleSelectGame(games[0].id);
+  }, [games]);
 
   if (metaLoading || !meta) {
     return (
@@ -77,14 +94,36 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         <div className="absolute top-[-10%] left-[30%] w-[700px] h-[500px] bg-accent/[0.03] rounded-full blur-[150px]" />
         <div className="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] bg-accent/[0.02] rounded-full blur-[120px]" />
       </div>
+
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-bg-primary/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="w-9 h-9 rounded-btn flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <Menu size={20} />
+        </button>
+        <span className="text-[15px] font-bold text-white tracking-tight">64's Dash</span>
+      </div>
+
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar
         categories={categories}
         games={games}
         selectedGameId={selectedGameId}
-        onSelectGame={setSelectedGameId}
+        onSelectGame={handleSelectGame}
         onLogout={onLogout}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
-      <main className="ml-[240px] p-8 relative z-10">
+      <main className="lg:ml-[240px] pt-[60px] lg:pt-0 p-4 sm:p-6 lg:p-8 relative z-10">
         <Routes>
           {categories.map((cat) => (
             <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} selectedGameId={selectedGameId} />} />

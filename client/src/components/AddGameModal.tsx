@@ -22,8 +22,8 @@ export default function AddGameModal({ onAdd, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="card w-full max-w-md p-8 shadow-card-hover">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="card w-full sm:max-w-md p-6 sm:p-8 shadow-card-hover rounded-b-none sm:rounded-b-card">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-7">
             <h2 className="text-lg font-bold text-white">Add Game</h2>

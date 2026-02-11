@@ -34,7 +34,7 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-accent/[0.05] rounded-full blur-[150px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-sm">
+      <div className="relative z-10 w-full max-w-sm px-4 sm:px-0">
         <div className="text-center mb-10">
           <div className="w-16 h-16 rounded-card bg-gradient-accent flex items-center justify-center mx-auto mb-5 shadow-glow-strong">
             <BarChart3 size={28} className="text-white" />
