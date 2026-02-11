@@ -7,7 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
-import { TimeSeriesResult, ProviderMeta } from '../hooks/useStats';
+import { TimeSeriesResult, ProviderMeta, TimeSeriesPoint } from '../hooks/useStats';
 
 interface TimeSeriesChartProps {
   provider: ProviderMeta;
@@ -57,8 +57,41 @@ function formatValue(value: number, format?: string, unit?: string): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/**
+ * Build chart data with split solid/partial series.
+ * - `solid`: value for complete data points (null for partial-only points)
+ * - `partial`: value for the dashed segment (bridge point + partial point)
+ */
+function buildChartData(data: TimeSeriesPoint[]) {
+  const hasPartial = data.some((p) => p.partial);
+  if (!hasPartial) {
+    // No partial points — everything is solid
+    return data.map((p) => ({ date: p.date, solid: p.value, partial: null as number | null }));
+  }
+
+  // Find the index where partial starts
+  const partialIdx = data.findIndex((p) => p.partial);
+
+  return data.map((p, i) => {
+    if (i < partialIdx - 1) {
+      // Pure solid
+      return { date: p.date, solid: p.value, partial: null as number | null };
+    }
+    if (i === partialIdx - 1) {
+      // Bridge point: both solid and partial connect here
+      return { date: p.date, solid: p.value, partial: p.value };
+    }
+    if (i >= partialIdx) {
+      // Partial segment
+      return { date: p.date, solid: null as number | null, partial: p.value };
+    }
+    return { date: p.date, solid: p.value, partial: null as number | null };
+  });
+}
+
 export default function TimeSeriesChart({ provider, result, interval }: TimeSeriesChartProps) {
   const color = CATEGORY_COLORS[provider.category] || '#3B82F6';
+  const hasPartial = result.data.some((p) => p.partial);
 
   if (result.data.length === 0) {
     return (
@@ -75,6 +108,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
 
   const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
   const displayValue = formatValue(avg, provider.format, provider.unit);
+  const chartData = buildChartData(result.data);
 
   return (
     <div className="card card-hover p-7">
@@ -85,10 +119,14 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
         </p>
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={result.data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
               <defs>
                 <linearGradient id={`g-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id={`g-${provider.id}-partial`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.10} />
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -113,18 +151,41 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   padding: '10px 14px',
                 }}
-                formatter={(value: number) => [formatValue(value, provider.format, provider.unit), provider.name]}
+                formatter={(value: any, name: string) => {
+                  if (value === null || value === undefined) return [null, null];
+                  const label = name === 'partial' ? `${provider.name} (accumulating)` : provider.name;
+                  return [formatValue(Number(value), provider.format, provider.unit), label];
+                }}
                 labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
               />
+
+              {/* Solid line — complete data */}
               <Area
                 type="monotone"
-                dataKey="value"
+                dataKey="solid"
                 stroke={color}
                 strokeWidth={2}
                 fill={`url(#g-${provider.id})`}
                 dot={false}
                 activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2 }}
+                connectNulls={false}
               />
+
+              {/* Dashed line — partial/accumulating data */}
+              {hasPartial && (
+                <Area
+                  type="monotone"
+                  dataKey="partial"
+                  stroke={color}
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.6}
+                  fill={`url(#g-${provider.id}-partial)`}
+                  dot={false}
+                  activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2, strokeDasharray: '' }}
+                  connectNulls={false}
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>

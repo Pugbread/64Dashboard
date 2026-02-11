@@ -9,27 +9,14 @@ export const d1RetentionProvider: StatProvider = {
   format: 'percentage',
 
   async query(pool: Pool, gameId: string, from: Date, to: Date, _interval: Interval): Promise<TimeSeriesResult> {
-    // D1 Retention — matches GameAnalytics' strict retention:
-    //   "The percent of users who installed on day D and returned N days later.
-    //    Strict retention: a user is retained only if they revisit on the exact
-    //    specified day N. Days are counted in UTC."
+    // D1 Retention — GameAnalytics strict retention, accumulative:
+    //   "The percent of users who installed on day D and returned exactly day D+1."
+    //   Strict = only counts revisits on the EXACT day, not "day 1 or later".
+    //   Days are counted in UTC.
     //
-    // For each calendar day D in the range:
-    //   1. Cohort = players whose FIRST EVER session started on day D.
-    //   2. Retained = those cohort players who had ANY session on day D+1.
-    //   3. D1 = retained / cohort * 100
-    //
-    // We only show cohorts where day D+1 has FULLY passed (standard GA behavior).
-    // This means the latest cohort shown is (today_utc - 2), because:
-    //   - (today - 2)'s D1 is (today - 1), which has fully passed.
-    //   - (today - 1)'s D1 is today, which hasn't ended yet → excluded.
-
-    // Compute the cutoff: only include cohorts where D+1 < today (UTC)
-    // i.e. first_day < today - 1
-    const cutoff = new Date();
-    cutoff.setUTCHours(0, 0, 0, 0); // start of today UTC
-    // first_day must be < cutoff - 1 day so that first_day+1 < cutoff (fully passed)
-    const maxCohortDate = new Date(cutoff.getTime() - 24 * 60 * 60 * 1000);
+    // We include yesterday's cohort whose D+1 is today (still accumulating).
+    // The last data point is tagged as `partial: true` so the frontend can
+    // render it with a dashed line to indicate it's not yet final.
 
     const { rows } = await pool.query(
       `WITH first_play AS (
@@ -44,7 +31,7 @@ export const d1RetentionProvider: StatProvider = {
          SELECT first_day, COUNT(*) AS cohort_size
          FROM first_play
          WHERE first_day >= $2::date
-           AND first_day < $4::date
+           AND first_day < $3::date
          GROUP BY first_day
        ),
        retained AS (
@@ -56,7 +43,7 @@ export const d1RetentionProvider: StatProvider = {
            AND s.player_id = fp.player_id
            AND DATE(s.started_at) = fp.first_day + 1
          WHERE fp.first_day >= $2::date
-           AND fp.first_day < $4::date
+           AND fp.first_day < $3::date
          GROUP BY fp.first_day
        )
        SELECT c.first_day                                               AS date,
@@ -65,15 +52,24 @@ export const d1RetentionProvider: StatProvider = {
        FROM cohorts c
        LEFT JOIN retained r ON c.first_day = r.first_day
        ORDER BY c.first_day ASC`,
-      [gameId, from.toISOString(), to.toISOString(), maxCohortDate.toISOString()]
+      [gameId, from.toISOString(), to.toISOString()]
     );
+
+    // Determine yesterday (UTC) to tag its data point as partial
+    const now = new Date();
+    const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
 
     return {
       type: 'timeseries',
-      data: rows.map((r) => ({
-        date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date),
-        value: Number(r.value || 0),
-      })),
+      data: rows.map((r) => {
+        const dateStr = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date);
+        return {
+          date: dateStr,
+          value: Number(r.value || 0),
+          ...(dateStr === yesterdayStr ? { partial: true } : {}),
+        };
+      }),
     };
   },
 };

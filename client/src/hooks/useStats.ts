@@ -7,6 +7,7 @@ export type Interval = '1m' | '5m' | '30m' | '1h' | '3h' | '7h' | '1d';
 export interface TimeSeriesPoint {
   date: string;
   value: number;
+  partial?: boolean; // true if this bucket is still accumulating
 }
 
 export interface TimeSeriesResult {

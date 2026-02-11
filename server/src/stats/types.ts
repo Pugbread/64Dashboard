@@ -49,6 +49,7 @@ export const DEFAULT_INTERVAL: Record<Range, Interval> = {
 export interface TimeSeriesPoint {
   date: string;
   value: number;
+  partial?: boolean; // true if this bucket is still accumulating
 }
 
 export interface TimeSeriesResult {
