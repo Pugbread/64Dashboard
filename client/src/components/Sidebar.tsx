@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, ChevronRight, X, Package, Crown, LayoutDashboard } from 'lucide-react';
+import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, ChevronRight, X, Package, Crown, LayoutDashboard, UserSearch } from 'lucide-react';
 import { Game } from '../hooks/useGames';
 
 interface SidebarProps {
@@ -192,6 +192,12 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
                 </NavLink>
               );
             })}
+
+            {/* Users — standalone link */}
+            <NavLink to="/users" className={linkClass}>
+              <UserSearch size={18} strokeWidth={1.5} />
+              Users
+            </NavLink>
           </div>
         </div>
 

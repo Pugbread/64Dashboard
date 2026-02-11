@@ -71,6 +71,21 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_custom_events_game_created ON custom_events(game_id, created_at);
     `,
   },
+  {
+    name: '004_player_cache',
+    sql: `
+      CREATE TABLE IF NOT EXISTS player_cache (
+        player_id TEXT PRIMARY KEY,
+        display_name TEXT,
+        username TEXT,
+        avatar_url TEXT,
+        has_verified_badge BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_player_cache_display ON player_cache(display_name);
+      CREATE INDEX IF NOT EXISTS idx_player_cache_verified ON player_cache(has_verified_badge);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<void> {

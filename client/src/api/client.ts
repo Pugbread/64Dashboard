@@ -46,3 +46,5 @@ export const getProductBreakdown = (gameId: string, range: string, page = 1, lim
   api.get(`/stats/${gameId}/product-breakdown`, { params: { range, page, limit } });
 export const getTopSpenders = (gameId: string, range: string, page = 1, limit = 25) =>
   api.get(`/stats/${gameId}/top-spenders`, { params: { range, page, limit } });
+export const getUsers = (gameId: string, page = 1, limit = 25, search = '', verified = false, sort = 'playtime') =>
+  api.get(`/stats/${gameId}/users`, { params: { page, limit, search, verified, sort } });

@@ -237,6 +237,188 @@ router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
   }
 });
 
+// ── Roblox user resolution helper (batch, with cache) ──
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+async function resolvePlayersToCache(playerIds: string[]): Promise<void> {
+  if (playerIds.length === 0) return;
+
+  // Check which ones are stale or missing
+  const { rows: cached } = await pool.query(
+    `SELECT player_id, updated_at FROM player_cache WHERE player_id = ANY($1)`,
+    [playerIds]
+  );
+  const cachedMap = new Map(cached.map((r) => [r.player_id, new Date(r.updated_at).getTime()]));
+  const now = Date.now();
+  const needsResolve = playerIds.filter((id) => {
+    const ts = cachedMap.get(id);
+    return !ts || (now - ts > CACHE_TTL_MS);
+  });
+
+  if (needsResolve.length === 0) return;
+
+  // Batch in groups of 100 (Roblox API limit)
+  for (let i = 0; i < needsResolve.length; i += 100) {
+    const batch = needsResolve.slice(i, i + 100);
+    try {
+      // Fetch user info
+      const userRes = await fetch('https://users.roblox.com/v1/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: batch.map(Number), excludeBannedUsers: false }),
+      });
+      const userData: any = await userRes.json();
+
+      // Fetch avatar headshots
+      const avatarRes = await fetch(
+        `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${batch.join(',')}&size=150x150&format=Png&isCircular=false`
+      );
+      const avatarData: any = await avatarRes.json();
+      const avatarMap: Record<string, string | null> = {};
+      if (Array.isArray(avatarData?.data)) {
+        for (const a of avatarData.data) {
+          avatarMap[String(a.targetId)] = a.imageUrl || null;
+        }
+      }
+
+      if (Array.isArray(userData?.data)) {
+        for (const u of userData.data) {
+          const pid = String(u.id);
+          await pool.query(
+            `INSERT INTO player_cache (player_id, display_name, username, avatar_url, has_verified_badge, updated_at)
+             VALUES ($1, $2, $3, $4, $5, NOW())
+             ON CONFLICT (player_id) DO UPDATE SET
+               display_name = EXCLUDED.display_name,
+               username = EXCLUDED.username,
+               avatar_url = EXCLUDED.avatar_url,
+               has_verified_badge = EXCLUDED.has_verified_badge,
+               updated_at = NOW()`,
+            [pid, u.displayName || u.name || pid, u.name || pid, avatarMap[pid] || null, !!u.hasVerifiedBadge]
+          );
+        }
+      }
+    } catch (e) {
+      console.error('Roblox user resolve batch error:', e);
+    }
+  }
+}
+
+// GET /api/stats/:gameId/users — paginated player list with playtime
+router.get('/:gameId/users', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(25, Math.max(1, parseInt(String(req.query.limit || '25'), 10) || 25));
+    const offset = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+    const verifiedOnly = req.query.verified === 'true';
+    const sortBy = String(req.query.sort || 'playtime'); // 'playtime' | 'name' | 'joins'
+
+    // Verify game
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    // Step 1: Get all unique player IDs for this game
+    const { rows: allPlayerRows } = await pool.query(
+      `SELECT DISTINCT player_id FROM sessions WHERE game_id = $1`,
+      [gameId]
+    );
+    const allPlayerIds = allPlayerRows.map((r) => r.player_id);
+
+    if (allPlayerIds.length === 0) {
+      res.json({ users: [], total: 0, page, limit, totalPages: 0 });
+      return;
+    }
+
+    // Step 2: Ensure all players are in the cache
+    await resolvePlayersToCache(allPlayerIds);
+
+    // Step 3: Build the query with filters
+    // Join sessions aggregate with player_cache
+    const conditions: string[] = ['s.game_id = $1'];
+    const params: any[] = [gameId];
+    let paramIdx = 2;
+
+    if (search) {
+      conditions.push(`(pc.display_name ILIKE $${paramIdx} OR pc.username ILIKE $${paramIdx} OR s.player_id = $${paramIdx + 1})`);
+      params.push(`%${search}%`, search);
+      paramIdx += 2;
+    }
+
+    if (verifiedOnly) {
+      conditions.push(`pc.has_verified_badge = TRUE`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    let orderClause: string;
+    switch (sortBy) {
+      case 'name':
+        orderClause = 'COALESCE(pc.display_name, s.player_id) ASC';
+        break;
+      case 'joins':
+        orderClause = 'joins DESC';
+        break;
+      case 'playtime':
+      default:
+        orderClause = 'playtime_seconds DESC';
+        break;
+    }
+
+    // Count total matching users
+    const countQuery = `
+      SELECT COUNT(*) AS total FROM (
+        SELECT s.player_id
+        FROM sessions s
+        LEFT JOIN player_cache pc ON pc.player_id = s.player_id
+        WHERE ${whereClause}
+        GROUP BY s.player_id, pc.display_name, pc.username, pc.has_verified_badge
+      ) sub
+    `;
+    const { rows: countRows } = await pool.query(countQuery, params);
+    const total = parseInt(countRows[0]?.total || '0', 10);
+
+    // Fetch paginated results
+    const dataQuery = `
+      SELECT
+        s.player_id,
+        COALESCE(pc.display_name, s.player_id) AS display_name,
+        pc.username,
+        pc.avatar_url,
+        COALESCE(pc.has_verified_badge, FALSE) AS has_verified_badge,
+        COUNT(*)::int AS joins,
+        COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(s.ended_at, NOW()) - s.started_at)))::bigint, 0) AS playtime_seconds,
+        MAX(s.started_at) AS last_seen
+      FROM sessions s
+      LEFT JOIN player_cache pc ON pc.player_id = s.player_id
+      WHERE ${whereClause}
+      GROUP BY s.player_id, pc.display_name, pc.username, pc.avatar_url, pc.has_verified_badge
+      ORDER BY ${orderClause}
+      LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
+    `;
+    params.push(limit, offset);
+
+    const { rows } = await pool.query(dataQuery, params);
+
+    const users = rows.map((r) => ({
+      playerId: r.player_id,
+      displayName: r.display_name,
+      username: r.username || r.player_id,
+      avatarUrl: r.avatar_url || null,
+      hasVerifiedBadge: r.has_verified_badge,
+      joins: r.joins,
+      playtimeSeconds: parseInt(r.playtime_seconds, 10),
+      lastSeen: r.last_seen,
+    }));
+
+    res.json({ users, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    console.error('Users list error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/stats/:gameId/:category — stats for one category
 router.get('/:gameId/:category', async (req: Request, res: Response) => {
   try {
