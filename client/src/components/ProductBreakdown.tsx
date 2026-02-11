@@ -1,14 +1,6 @@
 import { useState } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
 import { Package, ShoppingBag, Trophy, ArrowUpDown } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
-  Tooltip,
-} from 'recharts';
 
 interface Props {
   gameId: string | null;
@@ -23,32 +15,32 @@ function formatRobux(value: number): string {
   return `R$ ${value.toLocaleString()}`;
 }
 
-const VERTEX_COLORS = [
-  '#FACC15', // gold
-  '#CBD5E1', // silver
-  '#D97706', // bronze
-  '#3B82F6', // blue
-  '#60A5FA', // light blue
+const TOWER_GRADIENTS = [
+  'from-yellow-400 to-amber-500',   // #1 gold
+  'from-slate-300 to-slate-400',     // #2 silver
+  'from-amber-600 to-amber-700',     // #3 bronze
+  'from-blue-400 to-blue-500',       // #4
+  'from-blue-400/70 to-blue-500/70', // #5
 ];
 
-/* ─── Radar / Pentagon chart for top 5 ─── */
+const TOWER_SHADOWS = [
+  '0 0 24px rgba(250,204,21,0.15)',  // gold glow
+  '0 0 16px rgba(203,213,225,0.08)', // silver
+  '0 0 16px rgba(217,119,6,0.10)',   // bronze
+  '0 0 12px rgba(59,130,246,0.10)',  // blue
+  '0 0 12px rgba(96,165,250,0.08)',  // light blue
+];
 
-function TopFiveRadar({ products, sortField }: { products: ProductEntry[]; sortField: SortField }) {
+const RANK_LABELS = ['1st', '2nd', '3rd', '4th', '5th'];
+
+/* ─── Tower chart for top 5 ─── */
+
+function TopFiveTowers({ products, sortField }: { products: ProductEntry[]; sortField: SortField }) {
   const top5 = products.slice(0, 5);
   if (top5.length === 0) return null;
 
-  const maxVal = Math.max(...top5.map((p) => (sortField === 'revenue' ? p.revenue : p.sales)), 1);
-
-  const radarData = top5.map((p, i) => ({
-    name: p.productName.length > 14 ? p.productName.slice(0, 13) + '...' : p.productName,
-    fullName: p.productName,
-    value: sortField === 'revenue' ? p.revenue : p.sales,
-    normalised: ((sortField === 'revenue' ? p.revenue : p.sales) / maxVal) * 100,
-    iconUrl: p.iconUrl,
-    rank: i + 1,
-    revenue: p.revenue,
-    sales: p.sales,
-  }));
+  const getValue = (p: ProductEntry) => (sortField === 'revenue' ? p.revenue : p.sales);
+  const maxVal = Math.max(...top5.map(getValue), 1);
 
   return (
     <div className="card p-6 sm:p-7">
@@ -59,103 +51,64 @@ function TopFiveRadar({ products, sortField }: { products: ProductEntry[]; sortF
             Top {top5.length} Products
           </p>
         </div>
-        <p className="text-text-muted text-[10px] mb-6">
+        <p className="text-text-muted text-[10px] mb-8">
           Sorted by {sortField === 'revenue' ? 'revenue' : 'sales count'}
         </p>
 
-        {/* Radar chart */}
-        <div className="w-full max-w-[420px] mx-auto aspect-square">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-              <PolarGrid
-                stroke="rgba(255,255,255,0.06)"
-                gridType="polygon"
-              />
-              <PolarAngleAxis
-                dataKey="name"
-                tick={({ x, y, payload, index }: any) => {
-                  const entry = radarData[index];
-                  const color = VERTEX_COLORS[index] || '#60A5FA';
-                  return (
-                    <g transform={`translate(${x},${y})`}>
-                      <text
-                        textAnchor="middle"
-                        dy={-8}
-                        fill={color}
-                        fontSize={10}
-                        fontWeight={600}
-                      >
-                        {payload.value}
-                      </text>
-                      <text
-                        textAnchor="middle"
-                        dy={6}
-                        fill="#64748B"
-                        fontSize={9}
-                      >
-                        {sortField === 'revenue'
-                          ? formatRobux(entry?.revenue ?? 0)
-                          : `${(entry?.sales ?? 0).toLocaleString()} sales`}
-                      </text>
-                    </g>
-                  );
-                }}
-              />
-              <Radar
-                dataKey="normalised"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                fill="#3B82F6"
-                fillOpacity={0.15}
-                dot={{
-                  r: 4,
-                  fill: '#3B82F6',
-                  stroke: '#080808',
-                  strokeWidth: 2,
-                }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#121214',
-                  border: '1px solid #1E1E22',
-                  borderRadius: '4px',
-                  color: '#fff',
-                  fontSize: '12px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                  padding: '10px 14px',
-                }}
-                formatter={(_val: any, _name: any, props: any) => {
-                  const d = props.payload;
-                  return [
-                    `${formatRobux(d.revenue)} | ${d.sales.toLocaleString()} sales`,
-                    d.fullName,
-                  ];
-                }}
-                labelFormatter={() => ''}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
+        {/* Towers container */}
+        <div className="flex items-end justify-center gap-3 sm:gap-5 h-[220px] sm:h-[260px] px-2">
+          {top5.map((product, i) => {
+            const val = getValue(product);
+            const heightPct = Math.max((val / maxVal) * 100, 8); // min 8% so it's always visible
+
+            return (
+              <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[100px] h-full justify-end">
+                {/* Value label above tower */}
+                <p className="text-white text-[11px] sm:text-[13px] font-bold mb-2 text-center whitespace-nowrap">
+                  {sortField === 'revenue' ? formatRobux(val) : val.toLocaleString()}
+                </p>
+
+                {/* Product icon on top of tower */}
+                <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1.5 z-10">
+                  {product.iconUrl ? (
+                    <img src={product.iconUrl} alt={product.productName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package size={14} className="text-text-muted" />
+                    </div>
+                  )}
+                </div>
+
+                {/* The tower bar */}
+                <div
+                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[4]} transition-all duration-700 ease-out relative`}
+                  style={{
+                    height: `${heightPct}%`,
+                    boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[4],
+                  }}
+                >
+                  {/* Rank badge inside tower */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                    <span className="text-[10px] font-bold text-black/60">{RANK_LABELS[i]}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Legend below chart */}
-        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-4">
-          {top5.map((p, i) => (
-            <div key={p.productId} className="flex items-center gap-2">
-              <div className="w-6 h-6 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border">
-                {p.iconUrl ? (
-                  <img src={p.iconUrl} alt={p.productName} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package size={10} className="text-text-muted" />
-                  </div>
-                )}
-              </div>
-              <span
-                className="text-[11px] font-medium"
-                style={{ color: VERTEX_COLORS[i] || '#60A5FA' }}
-              >
-                #{i + 1} {p.productName.length > 18 ? p.productName.slice(0, 17) + '...' : p.productName}
-              </span>
+        {/* Product names below towers */}
+        <div className="flex justify-center gap-3 sm:gap-5 mt-3 px-2">
+          {top5.map((product) => (
+            <div key={product.productId} className="flex-1 max-w-[100px] text-center">
+              <p className="text-text-secondary text-[10px] sm:text-[11px] font-medium truncate">
+                {product.productName}
+              </p>
+              <p className="text-text-muted text-[9px] mt-0.5">
+                {sortField === 'revenue'
+                  ? `${product.sales.toLocaleString()} sales`
+                  : formatRobux(product.revenue)}
+              </p>
             </div>
           ))}
         </div>
@@ -297,14 +250,13 @@ export default function ProductBreakdown({ gameId, range }: Props) {
     );
   }
 
-  // Sort products for the radar chart based on current sort field
   const sortedProducts = [...data.products].sort((a, b) =>
     sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales
   );
 
   return (
     <div className="space-y-5">
-      <TopFiveRadar products={sortedProducts} sortField={sortField} />
+      <TopFiveTowers products={sortedProducts} sortField={sortField} />
       <ProductTable products={data.products} sortField={sortField} onSortChange={setSortField} />
     </div>
   );
