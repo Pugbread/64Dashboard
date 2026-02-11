@@ -9,16 +9,28 @@ export const d1RetentionProvider: StatProvider = {
   format: 'percentage',
 
   async query(pool: Pool, gameId: string, from: Date, to: Date, _interval: Interval): Promise<TimeSeriesResult> {
-    // D1 retention is inherently a daily metric (cohort per calendar day).
-    // For each day in the range:
-    //   1. Find players whose FIRST EVER session in this game started on that day (the cohort).
-    //   2. Check how many of those players had ANY session the next calendar day.
-    //   3. retention = retained / cohort_size * 100
+    // D1 Retention — matches GameAnalytics' strict retention:
+    //   "The percent of users who installed on day D and returned N days later.
+    //    Strict retention: a user is retained only if they revisit on the exact
+    //    specified day N. Days are counted in UTC."
     //
-    // We can only compute this for days at least 1 day before "to",
-    // since we need the full next day to have passed.
+    // For each calendar day D in the range:
+    //   1. Cohort = players whose FIRST EVER session started on day D.
+    //   2. Retained = those cohort players who had ANY session on day D+1.
+    //   3. D1 = retained / cohort * 100
+    //
+    // We only show cohorts where day D+1 has FULLY passed (standard GA behavior).
+    // This means the latest cohort shown is (today_utc - 2), because:
+    //   - (today - 2)'s D1 is (today - 1), which has fully passed.
+    //   - (today - 1)'s D1 is today, which hasn't ended yet → excluded.
 
-    // Include yesterday's cohort — their D1 data is accumulative (today isn't over)
+    // Compute the cutoff: only include cohorts where D+1 < today (UTC)
+    // i.e. first_day < today - 1
+    const cutoff = new Date();
+    cutoff.setUTCHours(0, 0, 0, 0); // start of today UTC
+    // first_day must be < cutoff - 1 day so that first_day+1 < cutoff (fully passed)
+    const maxCohortDate = new Date(cutoff.getTime() - 24 * 60 * 60 * 1000);
+
     const { rows } = await pool.query(
       `WITH first_play AS (
          -- First-ever session date per player in this game
@@ -28,21 +40,23 @@ export const d1RetentionProvider: StatProvider = {
          GROUP BY player_id
        ),
        cohorts AS (
-         -- Cohort sizes per day within the range
+         -- Cohort sizes per day within the visible range
          SELECT first_day, COUNT(*) AS cohort_size
          FROM first_play
-         WHERE first_day >= $2::date AND first_day < $3::date
+         WHERE first_day >= $2::date
+           AND first_day < $4::date
          GROUP BY first_day
        ),
        retained AS (
-         -- Players who returned exactly 1 day after their first_day
+         -- Players who returned on exactly first_day + 1
          SELECT fp.first_day, COUNT(DISTINCT fp.player_id) AS retained_count
          FROM first_play fp
          INNER JOIN sessions s
            ON  s.game_id   = $1
            AND s.player_id = fp.player_id
            AND DATE(s.started_at) = fp.first_day + 1
-         WHERE fp.first_day >= $2::date AND fp.first_day < $3::date
+         WHERE fp.first_day >= $2::date
+           AND fp.first_day < $4::date
          GROUP BY fp.first_day
        )
        SELECT c.first_day                                               AS date,
@@ -51,7 +65,7 @@ export const d1RetentionProvider: StatProvider = {
        FROM cohorts c
        LEFT JOIN retained r ON c.first_day = r.first_day
        ORDER BY c.first_day ASC`,
-      [gameId, from.toISOString(), to.toISOString()]
+      [gameId, from.toISOString(), to.toISOString(), maxCohortDate.toISOString()]
     );
 
     return {

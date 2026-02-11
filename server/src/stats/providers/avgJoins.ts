@@ -3,7 +3,7 @@ import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate 
 
 export const avgJoinsProvider: StatProvider = {
   id: 'avg_joins',
-  name: 'Avg Joins per User',
+  name: 'Sessions per User',
   category: 'engagement',
   format: 'number',
 

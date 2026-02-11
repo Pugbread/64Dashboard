@@ -3,7 +3,7 @@ import { StatProvider, TimeSeriesResult, Interval, intervalTrunc, formatRowDate,
 
 export const avgSessionTimeProvider: StatProvider = {
   id: 'avg_session_time',
-  name: 'Avg Session Time',
+  name: 'Average Session Length',
   category: 'engagement',
   unit: 'min',
   format: 'duration',
