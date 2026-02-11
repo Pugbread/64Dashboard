@@ -47,6 +47,24 @@ class StatRegistry {
     }));
   }
 
+  async querySingleProvider(
+    pool: Pool,
+    gameId: string,
+    providerId: string,
+    from: Date,
+    to: Date,
+    interval: Interval
+  ): Promise<StatResult> {
+    const provider = this.providers.get(providerId);
+    if (!provider) return { type: 'timeseries', data: [] };
+    try {
+      return await provider.query(pool, gameId, from, to, interval);
+    } catch (error) {
+      console.error(`Error querying ${providerId}:`, error);
+      return { type: 'timeseries', data: [] };
+    }
+  }
+
   async queryCategory(
     pool: Pool,
     gameId: string,

@@ -57,6 +57,18 @@ function formatValue(value: number, format?: string, unit?: string): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** Full precision value — never abbreviated. Used for title/hover. */
+function formatValueFull(value: number, format?: string, unit?: string): string {
+  if (format === 'duration') {
+    const mins = Math.floor(value);
+    const secs = Math.round((value - mins) * 60);
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  }
+  if (format === 'currency') return `${unit || 'R$'} ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (format === 'percentage') return `${value.toFixed(2)}%`;
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
 /**
  * Build chart data with split solid/partial series.
  * - `solid`: value for complete data points (null for partial-only points)
@@ -120,15 +132,15 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
         <p className="text-[12px] text-text-secondary font-medium mb-1">{provider.name}</p>
         {isRevenue ? (
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-6">
-            <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+            <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total: ${formatValueFull(total, provider.format, provider.unit)}`}>
               Total: {formatValue(total, provider.format, provider.unit)}
             </p>
-            <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none">
+            <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none" title={`Average: ${formatValueFull(avg, provider.format, provider.unit)}`}>
               Average: {formatValue(avg, provider.format, provider.unit)}
             </p>
           </div>
         ) : (
-          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none mb-6">
+          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none mb-6" title={formatValueFull(avg, provider.format, provider.unit)}>
             {displayValue}
           </p>
         )}

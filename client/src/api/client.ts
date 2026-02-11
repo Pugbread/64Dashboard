@@ -38,6 +38,8 @@ export const deleteGame = (id: string) => api.delete(`/games/${id}`);
 export const getStatsMeta = () => api.get('/stats/meta');
 export const getCategoryStats = (gameId: string, category: string, range: string, interval: string) =>
   api.get(`/stats/${gameId}/${category}`, { params: { range, interval } });
+export const getProviderStat = (gameId: string, category: string, providerId: string, range: string, interval: string) =>
+  api.get(`/stats/${gameId}/${category}`, { params: { range, interval, provider: providerId } });
 export const getCCU = (gameId: string) =>
   api.get(`/stats/${gameId}/ccu`);
 export const getProductBreakdown = (gameId: string, range: string) =>

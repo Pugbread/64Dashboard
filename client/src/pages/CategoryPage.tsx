@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useCategoryStats, Range, Interval, ProviderMeta, TimeSeriesResult } from '../hooks/useStats';
+import { Range, Interval, ProviderMeta } from '../hooks/useStats';
 import { useCCU } from '../hooks/useCCU';
+import { useMeta } from '../hooks/useMeta';
 import Dropdown from '../components/Dropdown';
-import TimeSeriesChart from '../components/TimeSeriesChart';
+import LazyChart from '../components/LazyChart';
 import ProductBreakdown from '../components/ProductBreakdown';
 import { Users } from 'lucide-react';
 
@@ -57,8 +58,13 @@ interface CategoryPageProps {
 export default function CategoryPage({ category, selectedGameId }: CategoryPageProps) {
   const [range, setRange] = useState<Range>('24h');
   const [interval, setInterval] = useState<Interval>('1h');
-  const { data: stats, loading } = useCategoryStats(selectedGameId, category, range, interval);
+  const { meta } = useMeta();
   const ccu = useCCU(category === 'engagement' ? selectedGameId : null);
+
+  // Get providers for this category from meta
+  const providers: ProviderMeta[] = meta
+    ? meta.providers.filter((p) => p.category === category)
+    : [];
 
   useEffect(() => {
     const available = getAvailableIntervals(range);
@@ -97,24 +103,28 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
         </div>
       )}
 
-      {/* Charts */}
+      {/* Charts — each loads independently */}
       {!selectedGameId ? (
         <div className="card p-16 text-center">
           <div className="relative z-10 text-text-secondary text-sm">Select a game to view analytics</div>
         </div>
-      ) : loading ? (
-        <div className="text-text-secondary text-sm py-16 text-center">Loading analytics...</div>
-      ) : stats?.providers.length === 0 ? (
+      ) : providers.length === 0 ? (
         <div className="card p-16 text-center">
-          <div className="relative z-10 text-text-secondary text-sm">No data available for this period</div>
+          <div className="relative z-10 text-text-secondary text-sm">No providers for this category</div>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {stats?.providers.map((p: ProviderMeta) => {
-              const result: TimeSeriesResult = stats.metrics[p.id] || { type: 'timeseries', data: [] };
-              return <TimeSeriesChart key={p.id} provider={p} result={result} interval={interval} />;
-            })}
+            {providers.map((p) => (
+              <LazyChart
+                key={`${p.id}-${range}-${interval}`}
+                gameId={selectedGameId}
+                category={category}
+                provider={p}
+                range={range}
+                interval={interval}
+              />
+            ))}
           </div>
 
           {/* Product breakdown for revenue category */}

@@ -155,18 +155,33 @@ router.get('/:gameId/:category', async (req: Request, res: Response) => {
     if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
 
     // Verify category
-    const providers = registry.getProviderMeta(category);
-    if (providers.length === 0) { res.status(404).json({ error: 'Unknown category' }); return; }
+    const allProviders = registry.getProviderMeta(category);
+    if (allProviders.length === 0) { res.status(404).json({ error: 'Unknown category' }); return; }
 
-    const metrics = await registry.queryCategory(pool, gameId, category, from, to, interval);
+    // Optional: filter to a single provider for progressive loading
+    const providerFilter = req.query.provider ? String(req.query.provider) : undefined;
 
-    res.json({
-      gameId, category, range, interval,
-      from: from.toISOString(),
-      to: to.toISOString(),
-      providers,
-      metrics,
-    });
+    if (providerFilter) {
+      const providerMeta = allProviders.find((p) => p.id === providerFilter);
+      if (!providerMeta) { res.status(404).json({ error: 'Unknown provider' }); return; }
+      const result = await registry.querySingleProvider(pool, gameId, providerFilter, from, to, interval);
+      res.json({
+        gameId, category, range, interval,
+        from: from.toISOString(),
+        to: to.toISOString(),
+        providers: [providerMeta],
+        metrics: { [providerFilter]: result },
+      });
+    } else {
+      const metrics = await registry.queryCategory(pool, gameId, category, from, to, interval);
+      res.json({
+        gameId, category, range, interval,
+        from: from.toISOString(),
+        to: to.toISOString(),
+        providers: allProviders,
+        metrics,
+      });
+    }
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ error: 'Internal server error' });

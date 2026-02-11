@@ -15,6 +15,10 @@ function formatRobux(value: number): string {
   return `R$ ${value.toLocaleString()}`;
 }
 
+function formatRobuxFull(value: number): string {
+  return `R$ ${value.toLocaleString()}`;
+}
+
 const TOWER_GRADIENTS = [
   'from-yellow-400 to-amber-500',   // #1 gold
   'from-slate-300 to-slate-400',     // #2 silver
@@ -64,7 +68,10 @@ function TopFiveTowers({ products, sortField }: { products: ProductEntry[]; sort
             return (
               <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[100px] h-full justify-end">
                 {/* Value label above tower */}
-                <p className="text-white text-[11px] sm:text-[13px] font-bold mb-2 text-center whitespace-nowrap">
+                <p
+                  className="text-white text-[11px] sm:text-[13px] font-bold mb-2 text-center whitespace-nowrap cursor-default"
+                  title={sortField === 'revenue' ? formatRobuxFull(val) : val.toLocaleString()}
+                >
                   {sortField === 'revenue' ? formatRobux(val) : val.toLocaleString()}
                 </p>
 
@@ -210,10 +217,10 @@ function ProductTable({
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <span className="text-white text-[13px] font-semibold">{formatRobux(p.revenue)}</span>
+                    <span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(p.revenue)}>{formatRobux(p.revenue)}</span>
                   </td>
                   <td className="px-4 py-3.5 text-right pr-6 sm:pr-7">
-                    <span className="text-text-secondary text-[13px] font-medium">{p.sales.toLocaleString()}</span>
+                    <span className="text-text-secondary text-[13px] font-medium cursor-default" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span>
                   </td>
                 </tr>
               ))}
