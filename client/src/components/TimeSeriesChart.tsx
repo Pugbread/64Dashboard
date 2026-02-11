@@ -107,16 +107,31 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
   }
 
   const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
+  const total = result.data.reduce((sum, p) => sum + p.value, 0);
   const displayValue = formatValue(avg, provider.format, provider.unit);
   const chartData = buildChartData(result.data);
+
+  // Revenue gets both Total and Average in the headline
+  const isRevenue = provider.id === 'revenue';
 
   return (
     <div className="card card-hover p-7">
       <div className="relative z-10">
         <p className="text-[12px] text-text-secondary font-medium mb-1">{provider.name}</p>
-        <p className="text-[28px] font-bold text-white tracking-tight leading-none mb-6">
-          {displayValue}
-        </p>
+        {isRevenue ? (
+          <div className="flex items-baseline gap-4 mb-6">
+            <p className="text-[28px] font-bold text-white tracking-tight leading-none">
+              Total: {formatValue(total, provider.format, provider.unit)}
+            </p>
+            <p className="text-[16px] font-semibold text-text-secondary tracking-tight leading-none">
+              Average: {formatValue(avg, provider.format, provider.unit)}
+            </p>
+          </div>
+        ) : (
+          <p className="text-[28px] font-bold text-white tracking-tight leading-none mb-6">
+            {displayValue}
+          </p>
+        )}
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
