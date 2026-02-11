@@ -3,6 +3,7 @@ import { useCategoryStats, Range, Interval, ProviderMeta, TimeSeriesResult } fro
 import { useCCU } from '../hooks/useCCU';
 import Dropdown from '../components/Dropdown';
 import TimeSeriesChart from '../components/TimeSeriesChart';
+import ProductBreakdown from '../components/ProductBreakdown';
 import { Users } from 'lucide-react';
 
 const RANGE_OPTIONS = [
@@ -108,12 +109,19 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
           <div className="relative z-10 text-text-secondary text-sm">No data available for this period</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          {stats?.providers.map((p: ProviderMeta) => {
-            const result: TimeSeriesResult = stats.metrics[p.id] || { type: 'timeseries', data: [] };
-            return <TimeSeriesChart key={p.id} provider={p} result={result} interval={interval} />;
-          })}
-        </div>
+        <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            {stats?.providers.map((p: ProviderMeta) => {
+              const result: TimeSeriesResult = stats.metrics[p.id] || { type: 'timeseries', data: [] };
+              return <TimeSeriesChart key={p.id} provider={p} result={result} interval={interval} />;
+            })}
+          </div>
+
+          {/* Product breakdown for revenue category */}
+          {category === 'revenue' && (
+            <ProductBreakdown gameId={selectedGameId} range={range} />
+          )}
+        </>
       )}
     </div>
   );

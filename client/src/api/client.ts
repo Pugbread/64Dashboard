@@ -40,3 +40,5 @@ export const getCategoryStats = (gameId: string, category: string, range: string
   api.get(`/stats/${gameId}/${category}`, { params: { range, interval } });
 export const getCCU = (gameId: string) =>
   api.get(`/stats/${gameId}/ccu`);
+export const getProductBreakdown = (gameId: string, range: string) =>
+  api.get(`/stats/${gameId}/product-breakdown`, { params: { range } });

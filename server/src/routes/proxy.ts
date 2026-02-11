@@ -54,4 +54,39 @@ router.get('/game-info/:universeId', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/proxy/product-icons?ids=1,2,3&type=devproduct|gamepass
+router.get('/product-icons', async (req: Request, res: Response) => {
+  try {
+    const ids = String(req.query.ids || '');
+    const productType = String(req.query.type || 'devproduct');
+
+    if (!ids) {
+      res.json({});
+      return;
+    }
+
+    let apiUrl: string;
+    if (productType === 'gamepass') {
+      apiUrl = `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${ids}&size=150x150&format=Png&isCircular=false`;
+    } else {
+      apiUrl = `https://thumbnails.roblox.com/v1/developer-products/icons?developerProductIds=${ids}&size=150x150&format=Png&isCircular=false`;
+    }
+
+    const response = await fetch(apiUrl);
+    const data: any = await response.json();
+
+    const iconMap: Record<string, string | null> = {};
+    if (Array.isArray(data?.data)) {
+      for (const item of data.data) {
+        iconMap[String(item.targetId)] = item.imageUrl || null;
+      }
+    }
+
+    res.json(iconMap);
+  } catch (error) {
+    console.error('Error proxying product icons:', error);
+    res.json({});
+  }
+});
+
 export default router;
