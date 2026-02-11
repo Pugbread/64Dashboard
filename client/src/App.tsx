@@ -7,6 +7,7 @@ import ProductsPage from './pages/ProductsPage';
 import SpendersPage from './pages/SpendersPage';
 import UsersPage from './pages/UsersPage';
 import Games from './pages/Games';
+import TopBar from './components/TopBar';
 import { useMeta } from './hooks/useMeta';
 import { useGames } from './hooks/useGames';
 import { Menu } from 'lucide-react';
@@ -126,7 +127,9 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         mobileOpen={sidebarOpen}
         onMobileClose={() => setSidebarOpen(false)}
       />
-      <main className="lg:ml-[240px] pt-[60px] lg:pt-0 p-4 sm:p-6 lg:p-8 relative z-10">
+      <div className="lg:ml-[240px] pt-[60px] lg:pt-0 relative z-10 flex flex-col min-h-screen">
+        <TopBar />
+        <main className="p-4 sm:p-6 lg:p-8 flex-1">
         <Routes>
           {categories.map((cat) => (
             <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} selectedGameId={selectedGameId} />} />
@@ -138,7 +141,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
           <Route path="*" element={<Navigate to={`/${defaultCategory}`} replace />} />
         </Routes>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

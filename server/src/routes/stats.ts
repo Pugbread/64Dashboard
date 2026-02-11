@@ -313,29 +313,13 @@ router.get('/:gameId/users', async (req: Request, res: Response) => {
     const offset = (page - 1) * limit;
     const search = String(req.query.search || '').trim();
     const verifiedOnly = req.query.verified === 'true';
-    const sortBy = String(req.query.sort || 'playtime'); // 'playtime' | 'name' | 'joins'
+    const sortBy = String(req.query.sort || 'playtime');
 
     // Verify game
     const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
     if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
 
-    // Step 1: Get all unique player IDs for this game
-    const { rows: allPlayerRows } = await pool.query(
-      `SELECT DISTINCT player_id FROM sessions WHERE game_id = $1`,
-      [gameId]
-    );
-    const allPlayerIds = allPlayerRows.map((r) => r.player_id);
-
-    if (allPlayerIds.length === 0) {
-      res.json({ users: [], total: 0, page, limit, totalPages: 0 });
-      return;
-    }
-
-    // Step 2: Ensure all players are in the cache
-    await resolvePlayersToCache(allPlayerIds);
-
-    // Step 3: Build the query with filters
-    // Join sessions aggregate with player_cache
+    // Build query — join sessions with cache (LEFT JOIN so uncached players still appear)
     const conditions: string[] = ['s.game_id = $1'];
     const params: any[] = [gameId];
     let paramIdx = 2;
@@ -345,7 +329,6 @@ router.get('/:gameId/users', async (req: Request, res: Response) => {
       params.push(`%${search}%`, search);
       paramIdx += 2;
     }
-
     if (verifiedOnly) {
       conditions.push(`pc.has_verified_badge = TRUE`);
     }
@@ -354,52 +337,82 @@ router.get('/:gameId/users', async (req: Request, res: Response) => {
 
     let orderClause: string;
     switch (sortBy) {
-      case 'name':
-        orderClause = 'COALESCE(pc.display_name, s.player_id) ASC';
-        break;
-      case 'joins':
-        orderClause = 'joins DESC';
-        break;
-      case 'playtime':
-      default:
-        orderClause = 'playtime_seconds DESC';
-        break;
+      case 'name': orderClause = 'COALESCE(pc.display_name, s.player_id) ASC'; break;
+      case 'joins': orderClause = 'joins DESC'; break;
+      default: orderClause = 'playtime_seconds DESC'; break;
     }
 
-    // Count total matching users
-    const countQuery = `
-      SELECT COUNT(*) AS total FROM (
-        SELECT s.player_id
-        FROM sessions s
-        LEFT JOIN player_cache pc ON pc.player_id = s.player_id
-        WHERE ${whereClause}
-        GROUP BY s.player_id, pc.display_name, pc.username, pc.has_verified_badge
-      ) sub
-    `;
-    const { rows: countRows } = await pool.query(countQuery, params);
+    // Count total
+    const { rows: countRows } = await pool.query(
+      `SELECT COUNT(*) AS total FROM (
+         SELECT s.player_id FROM sessions s
+         LEFT JOIN player_cache pc ON pc.player_id = s.player_id
+         WHERE ${whereClause}
+         GROUP BY s.player_id, pc.display_name, pc.username, pc.has_verified_badge
+       ) sub`,
+      params
+    );
     const total = parseInt(countRows[0]?.total || '0', 10);
 
-    // Fetch paginated results
-    const dataQuery = `
-      SELECT
-        s.player_id,
-        COALESCE(pc.display_name, s.player_id) AS display_name,
-        pc.username,
-        pc.avatar_url,
-        COALESCE(pc.has_verified_badge, FALSE) AS has_verified_badge,
-        COUNT(*)::int AS joins,
-        COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(s.ended_at, NOW()) - s.started_at)))::bigint, 0) AS playtime_seconds,
-        MAX(s.started_at) AS last_seen
-      FROM sessions s
-      LEFT JOIN player_cache pc ON pc.player_id = s.player_id
-      WHERE ${whereClause}
-      GROUP BY s.player_id, pc.display_name, pc.username, pc.avatar_url, pc.has_verified_badge
-      ORDER BY ${orderClause}
-      LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
-    `;
-    params.push(limit, offset);
+    // Fetch paginated page (fast — no Roblox calls yet)
+    const dataParams = [...params, limit, offset];
+    const { rows } = await pool.query(
+      `SELECT
+         s.player_id,
+         COALESCE(pc.display_name, s.player_id) AS display_name,
+         pc.username,
+         pc.avatar_url,
+         COALESCE(pc.has_verified_badge, FALSE) AS has_verified_badge,
+         COUNT(*)::int AS joins,
+         COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(s.ended_at, NOW()) - s.started_at)))::bigint, 0) AS playtime_seconds,
+         MAX(s.started_at) AS last_seen
+       FROM sessions s
+       LEFT JOIN player_cache pc ON pc.player_id = s.player_id
+       WHERE ${whereClause}
+       GROUP BY s.player_id, pc.display_name, pc.username, pc.avatar_url, pc.has_verified_badge
+       ORDER BY ${orderClause}
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      dataParams
+    );
 
-    const { rows } = await pool.query(dataQuery, params);
+    // Resolve ONLY this page's uncached/stale players (max 25)
+    const pagePlayerIds = rows.map((r) => r.player_id);
+    const uncached = rows.filter((r) => !r.username).map((r) => r.player_id);
+    if (uncached.length > 0) {
+      await resolvePlayersToCache(uncached);
+      // Re-read only the resolved rows from cache
+      const { rows: freshCache } = await pool.query(
+        `SELECT player_id, display_name, username, avatar_url, has_verified_badge FROM player_cache WHERE player_id = ANY($1)`,
+        [uncached]
+      );
+      const cacheMap = new Map(freshCache.map((r) => [r.player_id, r]));
+      for (const row of rows) {
+        const c = cacheMap.get(row.player_id);
+        if (c) {
+          row.display_name = c.display_name || row.display_name;
+          row.username = c.username;
+          row.avatar_url = c.avatar_url;
+          row.has_verified_badge = c.has_verified_badge;
+        }
+      }
+    }
+
+    // Fire-and-forget: background-cache remaining uncached players for this game
+    // This makes subsequent loads (including verified filter / search) progressively better
+    (async () => {
+      try {
+        const { rows: uncachedAll } = await pool.query(
+          `SELECT DISTINCT s.player_id FROM sessions s
+           LEFT JOIN player_cache pc ON pc.player_id = s.player_id
+           WHERE s.game_id = $1 AND pc.player_id IS NULL
+           LIMIT 200`,
+          [gameId]
+        );
+        if (uncachedAll.length > 0) {
+          await resolvePlayersToCache(uncachedAll.map((r) => r.player_id));
+        }
+      } catch { /* background, ignore errors */ }
+    })();
 
     const users = rows.map((r) => ({
       playerId: r.player_id,
