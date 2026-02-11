@@ -60,12 +60,15 @@ router.get('/:gameId/ccu', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/stats/:gameId/product-breakdown — revenue & sales per product
+// GET /api/stats/:gameId/product-breakdown — revenue & sales per product (paginated)
 router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => {
   try {
     const gameId = String(req.params.gameId);
     const rangeRaw = String(req.query.range || '7d');
     const range: Range = VALID_RANGES.includes(rangeRaw as Range) ? (rangeRaw as Range) : '7d';
+    const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(25, Math.max(1, parseInt(String(req.query.limit || '25'), 10) || 25));
+    const offset = (page - 1) * limit;
 
     const to = new Date();
     const from = new Date(to.getTime() - RANGE_MS[range]);
@@ -74,7 +77,18 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
     const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
     if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
 
-    // Query purchases grouped by product
+    // Count total distinct products
+    const { rows: countRows } = await pool.query(
+      `SELECT COUNT(*) AS total FROM (
+         SELECT product_id FROM purchases
+         WHERE game_id = $1 AND created_at >= $2 AND created_at <= $3
+         GROUP BY product_id
+       ) sub`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+    const total = parseInt(countRows[0]?.total || '0', 10);
+
+    // Query paginated purchases grouped by product
     const { rows } = await pool.query(
       `SELECT product_id, product_name, product_type,
               SUM(price_robux)::int AS revenue,
@@ -82,8 +96,9 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
        FROM purchases
        WHERE game_id = $1 AND created_at >= $2 AND created_at <= $3
        GROUP BY product_id, product_name, product_type
-       ORDER BY revenue DESC`,
-      [gameId, from.toISOString(), to.toISOString()]
+       ORDER BY revenue DESC
+       LIMIT $4 OFFSET $5`,
+      [gameId, from.toISOString(), to.toISOString(), limit, offset]
     );
 
     // Resolve product icons via Roblox Thumbnails API
@@ -121,19 +136,22 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
       iconUrl: iconMap[r.product_id] || null,
     }));
 
-    res.json({ products, range, from: from.toISOString(), to: to.toISOString() });
+    res.json({ products, total, page, limit, totalPages: Math.ceil(total / limit), range, from: from.toISOString(), to: to.toISOString() });
   } catch (error) {
     console.error('Product breakdown error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /api/stats/:gameId/top-spenders — top spenders by robux spent
+// GET /api/stats/:gameId/top-spenders — top spenders by robux spent (paginated)
 router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
   try {
     const gameId = String(req.params.gameId);
     const rangeRaw = String(req.query.range || '7d');
     const range: Range = VALID_RANGES.includes(rangeRaw as Range) ? (rangeRaw as Range) : '7d';
+    const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(25, Math.max(1, parseInt(String(req.query.limit || '25'), 10) || 25));
+    const offset = (page - 1) * limit;
 
     const to = new Date();
     const from = new Date(to.getTime() - RANGE_MS[range]);
@@ -142,7 +160,18 @@ router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
     const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
     if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
 
-    // Query purchases grouped by player
+    // Count total distinct spenders
+    const { rows: countRows } = await pool.query(
+      `SELECT COUNT(*) AS total FROM (
+         SELECT player_id FROM purchases
+         WHERE game_id = $1 AND created_at >= $2 AND created_at <= $3
+         GROUP BY player_id
+       ) sub`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+    const total = parseInt(countRows[0]?.total || '0', 10);
+
+    // Query paginated purchases grouped by player
     const { rows } = await pool.query(
       `SELECT player_id,
               SUM(price_robux)::int AS spent,
@@ -151,12 +180,12 @@ router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
        WHERE game_id = $1 AND created_at >= $2 AND created_at <= $3
        GROUP BY player_id
        ORDER BY spent DESC
-       LIMIT 20`,
-      [gameId, from.toISOString(), to.toISOString()]
+       LIMIT $4 OFFSET $5`,
+      [gameId, from.toISOString(), to.toISOString(), limit, offset]
     );
 
     if (rows.length === 0) {
-      res.json({ spenders: [], range, from: from.toISOString(), to: to.toISOString() });
+      res.json({ spenders: [], total, page, limit, totalPages: Math.ceil(total / limit), range, from: from.toISOString(), to: to.toISOString() });
       return;
     }
 
@@ -201,7 +230,7 @@ router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
       purchases: r.purchases,
     }));
 
-    res.json({ spenders, range, from: from.toISOString(), to: to.toISOString() });
+    res.json({ spenders, total, page, limit, totalPages: Math.ceil(total / limit), range, from: from.toISOString(), to: to.toISOString() });
   } catch (error) {
     console.error('Top spenders error:', error);
     res.status(500).json({ error: 'Internal server error' });

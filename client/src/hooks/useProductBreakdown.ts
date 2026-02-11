@@ -12,12 +12,16 @@ export interface ProductEntry {
 
 export interface ProductBreakdownResponse {
   products: ProductEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
   range: string;
   from: string;
   to: string;
 }
 
-export function useProductBreakdown(gameId: string | null, range: string) {
+export function useProductBreakdown(gameId: string | null, range: string, page: number = 1) {
   const [data, setData] = useState<ProductBreakdownResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,14 +29,14 @@ export function useProductBreakdown(gameId: string | null, range: string) {
     if (!gameId) return;
     try {
       setLoading(true);
-      const { data: resp } = await getProductBreakdown(gameId, range);
+      const { data: resp } = await getProductBreakdown(gameId, range, page, 25);
       setData(resp);
     } catch {
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [gameId, range]);
+  }, [gameId, range, page]);
 
   useEffect(() => { fetch_(); }, [fetch_]);
 

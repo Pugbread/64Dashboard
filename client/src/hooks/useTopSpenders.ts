@@ -11,12 +11,16 @@ export interface SpenderEntry {
 
 export interface TopSpendersResponse {
   spenders: SpenderEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
   range: string;
   from: string;
   to: string;
 }
 
-export function useTopSpenders(gameId: string | null, range: string) {
+export function useTopSpenders(gameId: string | null, range: string, page: number = 1) {
   const [data, setData] = useState<TopSpendersResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,14 +28,14 @@ export function useTopSpenders(gameId: string | null, range: string) {
     if (!gameId) return;
     try {
       setLoading(true);
-      const { data: resp } = await getTopSpenders(gameId, range);
+      const { data: resp } = await getTopSpenders(gameId, range, page, 25);
       setData(resp);
     } catch {
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [gameId, range]);
+  }, [gameId, range, page]);
 
   useEffect(() => { fetch_(); }, [fetch_]);
 

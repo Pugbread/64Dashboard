@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
 import { useTopSpenders, SpenderEntry } from '../hooks/useTopSpenders';
-import { Package, ShoppingBag, Trophy, ArrowUpDown, User, Crown } from 'lucide-react';
+import { Package, ShoppingBag, Trophy, ArrowUpDown, User, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   gameId: string | null;
@@ -171,9 +171,36 @@ function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[]; sort
   );
 }
 
+/* ─── Pagination controls ─── */
+
+function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between px-6 sm:px-7 py-3 border-t border-border">
+      <button
+        disabled={page <= 1}
+        onClick={() => onPageChange(page - 1)}
+        className="inline-flex items-center gap-1 text-[11px] font-medium text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft size={14} /> Prev
+      </button>
+      <span className="text-[11px] text-text-muted">
+        Page {page} of {totalPages}
+      </span>
+      <button
+        disabled={page >= totalPages}
+        onClick={() => onPageChange(page + 1)}
+        className="inline-flex items-center gap-1 text-[11px] font-medium text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        Next <ChevronRight size={14} />
+      </button>
+    </div>
+  );
+}
+
 /* ─── Product table ─── */
 
-function ProductTable({ products, sortField, onSortChange }: { products: ProductEntry[]; sortField: ProductSort; onSortChange: (f: ProductSort) => void }) {
+function ProductTable({ products, sortField, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (products.length === 0) return null;
   const sorted = [...products].sort((a, b) => sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales);
 
@@ -228,6 +255,7 @@ function ProductTable({ products, sortField, onSortChange }: { products: Product
             </tbody>
           </table>
         </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );
@@ -235,7 +263,7 @@ function ProductTable({ products, sortField, onSortChange }: { products: Product
 
 /* ─── Spender table ─── */
 
-function SpenderTable({ spenders, sortField, onSortChange }: { spenders: SpenderEntry[]; sortField: SpenderSort; onSortChange: (f: SpenderSort) => void }) {
+function SpenderTable({ spenders, sortField, onSortChange, page, totalPages, onPageChange }: { spenders: SpenderEntry[]; sortField: SpenderSort; onSortChange: (f: SpenderSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (spenders.length === 0) return null;
   const sorted = [...spenders].sort((a, b) => sortField === 'spent' ? b.spent - a.spent : b.purchases - a.purchases);
 
@@ -284,6 +312,7 @@ function SpenderTable({ spenders, sortField, onSortChange }: { spenders: Spender
             </tbody>
           </table>
         </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );
@@ -292,16 +321,37 @@ function SpenderTable({ spenders, sortField, onSortChange }: { spenders: Spender
 /* ─── Main component ─── */
 
 export default function ProductBreakdown({ gameId, range }: Props) {
-  const { data: productData, loading: productLoading } = useProductBreakdown(gameId, range);
-  const { data: spenderData, loading: spenderLoading } = useTopSpenders(gameId, range);
+  const [productPage, setProductPage] = useState(1);
+  const [spenderPage, setSpenderPage] = useState(1);
+  const { data: productData, loading: productLoading } = useProductBreakdown(gameId, range, productPage);
+  const { data: spenderData, loading: spenderLoading } = useTopSpenders(gameId, range, spenderPage);
   const [productSort, setProductSort] = useState<ProductSort>('revenue');
   const [spenderSort, setSpenderSort] = useState<SpenderSort>('spent');
+
+  // Cache the top-5 from page 1 for the tower charts
+  const [top5Products, setTop5Products] = useState<ProductEntry[]>([]);
+  const [top5Spenders, setTop5Spenders] = useState<SpenderEntry[]>([]);
+
+  useEffect(() => {
+    if (productData && productPage === 1 && productData.products.length > 0) {
+      setTop5Products([...productData.products].sort((a, b) => b.revenue - a.revenue).slice(0, 5));
+    }
+  }, [productData, productPage]);
+
+  useEffect(() => {
+    if (spenderData && spenderPage === 1 && spenderData.spenders.length > 0) {
+      setTop5Spenders([...spenderData.spenders].sort((a, b) => b.spent - a.spent).slice(0, 5));
+    }
+  }, [spenderData, spenderPage]);
+
+  // Reset pages when range or game changes
+  useEffect(() => { setProductPage(1); setSpenderPage(1); }, [gameId, range]);
 
   if (!gameId) return null;
 
   const loading = productLoading || spenderLoading;
-  const hasProducts = productData && productData.products.length > 0;
-  const hasSpenders = spenderData && spenderData.spenders.length > 0;
+  const hasProducts = (productData && productData.products.length > 0) || top5Products.length > 0;
+  const hasSpenders = (spenderData && spenderData.spenders.length > 0) || top5Spenders.length > 0;
 
   if (loading && !hasProducts && !hasSpenders) {
     return <div className="text-text-secondary text-sm py-8 text-center">Loading breakdown...</div>;
@@ -318,26 +368,28 @@ export default function ProductBreakdown({ gameId, range }: Props) {
     );
   }
 
-  const sortedProducts = hasProducts
-    ? [...productData.products].sort((a, b) => productSort === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales)
-    : [];
+  const sortedTowerProducts = [...top5Products].sort((a, b) => productSort === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales);
+  const sortedTowerSpenders = [...top5Spenders].sort((a, b) => spenderSort === 'spent' ? b.spent - a.spent : b.purchases - a.purchases);
 
-  const sortedSpenders = hasSpenders
-    ? [...spenderData.spenders].sort((a, b) => spenderSort === 'spent' ? b.spent - a.spent : b.purchases - a.purchases)
-    : [];
+  const prodTotalPages = productData?.totalPages ?? 1;
+  const spendTotalPages = spenderData?.totalPages ?? 1;
 
   return (
     <div className="space-y-5">
       {/* Tower charts side by side */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {hasProducts && <ProductTowers products={sortedProducts} sortField={productSort} />}
-        {hasSpenders && <SpenderTowers spenders={sortedSpenders} sortField={spenderSort} />}
+        {sortedTowerProducts.length > 0 && <ProductTowers products={sortedTowerProducts} sortField={productSort} />}
+        {sortedTowerSpenders.length > 0 && <SpenderTowers spenders={sortedTowerSpenders} sortField={spenderSort} />}
       </div>
 
       {/* Tables side by side */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {hasProducts && <ProductTable products={productData.products} sortField={productSort} onSortChange={setProductSort} />}
-        {hasSpenders && <SpenderTable spenders={spenderData.spenders} sortField={spenderSort} onSortChange={setSpenderSort} />}
+        {productData && productData.products.length > 0 && (
+          <ProductTable products={productData.products} sortField={productSort} onSortChange={setProductSort} page={productPage} totalPages={prodTotalPages} onPageChange={setProductPage} />
+        )}
+        {spenderData && spenderData.spenders.length > 0 && (
+          <SpenderTable spenders={spenderData.spenders} sortField={spenderSort} onSortChange={setSpenderSort} page={spenderPage} totalPages={spendTotalPages} onPageChange={setSpenderPage} />
+        )}
       </div>
     </div>
   );

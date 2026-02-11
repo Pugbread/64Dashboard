@@ -42,7 +42,7 @@ export const getProviderStat = (gameId: string, category: string, providerId: st
   api.get(`/stats/${gameId}/${category}`, { params: { range, interval, provider: providerId } });
 export const getCCU = (gameId: string) =>
   api.get(`/stats/${gameId}/ccu`);
-export const getProductBreakdown = (gameId: string, range: string) =>
-  api.get(`/stats/${gameId}/product-breakdown`, { params: { range } });
-export const getTopSpenders = (gameId: string, range: string) =>
-  api.get(`/stats/${gameId}/top-spenders`, { params: { range } });
+export const getProductBreakdown = (gameId: string, range: string, page = 1, limit = 25) =>
+  api.get(`/stats/${gameId}/product-breakdown`, { params: { range, page, limit } });
+export const getTopSpenders = (gameId: string, range: string, page = 1, limit = 25) =>
+  api.get(`/stats/${gameId}/top-spenders`, { params: { range, page, limit } });
