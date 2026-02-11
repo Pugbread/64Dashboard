@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import CategoryPage from './pages/CategoryPage';
+import ProductsPage from './pages/ProductsPage';
+import SpendersPage from './pages/SpendersPage';
 import Games from './pages/Games';
 import { useMeta } from './hooks/useMeta';
 import { useGames } from './hooks/useGames';
@@ -128,6 +130,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           {categories.map((cat) => (
             <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} selectedGameId={selectedGameId} />} />
           ))}
+          <Route path="/revenue/products" element={<ProductsPage selectedGameId={selectedGameId} />} />
+          <Route path="/revenue/spenders" element={<SpendersPage selectedGameId={selectedGameId} />} />
           <Route path="/games" element={<Games />} />
           <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
           <Route path="*" element={<Navigate to={`/${defaultCategory}`} replace />} />

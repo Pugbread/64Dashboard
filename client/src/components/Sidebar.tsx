@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
-import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, X } from 'lucide-react';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, ChevronRight, X, Package, Crown, LayoutDashboard } from 'lucide-react';
 import { Game } from '../hooks/useGames';
 
 interface SidebarProps {
@@ -24,6 +25,20 @@ const CATEGORY_LABELS: Record<string, string> = {
   retention: 'Retention',
 };
 
+interface SubCategory {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const SUBCATEGORIES: Record<string, SubCategory[]> = {
+  revenue: [
+    { path: '/revenue', label: 'Overview', icon: <LayoutDashboard size={16} strokeWidth={1.5} /> },
+    { path: '/revenue/products', label: 'Products', icon: <Package size={16} strokeWidth={1.5} /> },
+    { path: '/revenue/spenders', label: 'Spenders', icon: <Crown size={16} strokeWidth={1.5} /> },
+  ],
+};
+
 function getCategoryIcon(cat: string) {
   return CATEGORY_ICONS[cat] || <Layers size={18} strokeWidth={1.5} />;
 }
@@ -33,12 +48,36 @@ function getCategoryLabel(cat: string) {
 
 export default function Sidebar({ categories, games, selectedGameId, onSelectGame, onLogout, mobileOpen, onMobileClose }: SidebarProps) {
   const selectedGame = games.find((g) => g.id === selectedGameId);
+  const location = useLocation();
+
+  // Track which expandable categories are open
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    // Auto-expand if we're already on a sub-route
+    const initial: Record<string, boolean> = {};
+    for (const cat of Object.keys(SUBCATEGORIES)) {
+      if (location.pathname.startsWith(`/${cat}`)) {
+        initial[cat] = true;
+      }
+    }
+    return initial;
+  });
+
+  const toggleExpand = (cat: string) => {
+    setExpanded((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-btn text-[13px] transition-all duration-200 ${
       isActive
         ? 'font-semibold text-white bg-gradient-active border border-accent/20 shadow-glow'
         : 'font-medium text-text-secondary hover:text-white hover:bg-white/[0.03]'
+    }`;
+
+  const subLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-2.5 px-4 py-2 rounded-btn text-[12px] transition-all duration-200 ${
+      isActive
+        ? 'font-semibold text-white bg-accent/10 border border-accent/15'
+        : 'font-medium text-text-muted hover:text-text-secondary hover:bg-white/[0.02]'
     }`;
 
   return (
@@ -104,12 +143,55 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
         <div>
           <p className="category-label px-3 mb-3">Main</p>
           <div className="space-y-1">
-            {categories.map((cat) => (
-              <NavLink key={cat} to={`/${cat}`} className={linkClass}>
-                {getCategoryIcon(cat)}
-                {getCategoryLabel(cat)}
-              </NavLink>
-            ))}
+            {categories.map((cat) => {
+              const subs = SUBCATEGORIES[cat];
+              const isOnCat = location.pathname.startsWith(`/${cat}`);
+
+              if (subs) {
+                // Collapsible category with subcategories
+                const isExpanded = expanded[cat] || false;
+                return (
+                  <div key={cat}>
+                    <button
+                      onClick={() => toggleExpand(cat)}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-btn text-[13px] transition-all duration-200 w-full ${
+                        isOnCat
+                          ? 'font-semibold text-white bg-gradient-active border border-accent/20 shadow-glow'
+                          : 'font-medium text-text-secondary hover:text-white hover:bg-white/[0.03]'
+                      }`}
+                    >
+                      {getCategoryIcon(cat)}
+                      <span className="flex-1 text-left">{getCategoryLabel(cat)}</span>
+                      <ChevronRight
+                        size={14}
+                        className={`text-text-muted transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                      />
+                    </button>
+                    {/* Sub-items */}
+                    <div
+                      className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? 'max-h-[200px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}
+                    >
+                      <div className="ml-3 pl-3 border-l border-border/50 space-y-0.5">
+                        {subs.map((sub) => (
+                          <NavLink key={sub.path} to={sub.path} end className={subLinkClass}>
+                            {sub.icon}
+                            {sub.label}
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Regular category link
+              return (
+                <NavLink key={cat} to={`/${cat}`} className={linkClass}>
+                  {getCategoryIcon(cat)}
+                  {getCategoryLabel(cat)}
+                </NavLink>
+              );
+            })}
           </div>
         </div>
 

@@ -4,7 +4,6 @@ import { useCCU } from '../hooks/useCCU';
 import { useMeta } from '../hooks/useMeta';
 import Dropdown from '../components/Dropdown';
 import LazyChart from '../components/LazyChart';
-import ProductBreakdown from '../components/ProductBreakdown';
 import { Users } from 'lucide-react';
 
 const RANGE_OPTIONS = [
@@ -113,25 +112,18 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
           <div className="relative z-10 text-text-secondary text-sm">No providers for this category</div>
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {providers.map((p) => (
-              <LazyChart
-                key={`${p.id}-${range}-${interval}`}
-                gameId={selectedGameId}
-                category={category}
-                provider={p}
-                range={range}
-                interval={interval}
-              />
-            ))}
-          </div>
-
-          {/* Product breakdown for revenue category */}
-          {category === 'revenue' && (
-            <ProductBreakdown gameId={selectedGameId} range={range} />
-          )}
-        </>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          {providers.map((p) => (
+            <LazyChart
+              key={`${p.id}-${range}-${interval}`}
+              gameId={selectedGameId}
+              category={category}
+              provider={p}
+              range={range}
+              interval={interval}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
