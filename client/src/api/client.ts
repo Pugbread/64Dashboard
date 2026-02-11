@@ -48,3 +48,5 @@ export const getTopSpenders = (gameId: string, range: string, page = 1, limit = 
   api.get(`/stats/${gameId}/top-spenders`, { params: { range, page, limit } });
 export const getUsers = (gameId: string, page = 1, limit = 25, search = '', verified = false, sort = 'playtime') =>
   api.get(`/stats/${gameId}/users`, { params: { page, limit, search, verified, sort } });
+export const getPlaytimeDistribution = (gameId: string, range: string) =>
+  api.get(`/stats/${gameId}/playtime-distribution`, { params: { range } });

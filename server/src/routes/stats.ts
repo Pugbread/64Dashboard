@@ -237,6 +237,118 @@ router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/stats/:gameId/playtime-distribution — percentile breakdown for the timeframe
+router.get('/:gameId/playtime-distribution', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const rangeRaw = String(req.query.range || '7d');
+    const range: Range = VALID_RANGES.includes(rangeRaw as Range) ? (rangeRaw as Range) : '7d';
+
+    const to = new Date();
+    const from = new Date(to.getTime() - RANGE_MS[range]);
+
+    // Verify game
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    // Get percentiles and totals
+    const { rows: percRows } = await pool.query(
+      `WITH player_times AS (
+         SELECT player_id,
+                SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))::bigint AS pt
+         FROM sessions
+         WHERE game_id = $1 AND started_at >= $2 AND started_at <= $3 AND ended_at IS NOT NULL
+         GROUP BY player_id
+         HAVING SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) > 0
+       )
+       SELECT
+         percentile_cont(0.10) WITHIN GROUP (ORDER BY pt)::bigint AS p10,
+         percentile_cont(0.25) WITHIN GROUP (ORDER BY pt)::bigint AS p25,
+         percentile_cont(0.50) WITHIN GROUP (ORDER BY pt)::bigint AS p50,
+         percentile_cont(0.75) WITHIN GROUP (ORDER BY pt)::bigint AS p75,
+         percentile_cont(0.90) WITHIN GROUP (ORDER BY pt)::bigint AS p90,
+         percentile_cont(0.99) WITHIN GROUP (ORDER BY pt)::bigint AS p99,
+         COUNT(*)::int AS total_players,
+         COALESCE(SUM(pt), 0)::bigint AS total_playtime
+       FROM player_times`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+
+    const perc = percRows[0];
+    if (!perc || perc.total_players === 0) {
+      res.json({
+        percentiles: { p10: 0, p25: 0, p50: 0, p75: 0, p90: 0, p99: 0 },
+        curve: [],
+        totalPlayers: 0,
+        totalPlaytimeSeconds: 0,
+        topTenPercent: 0,
+        topOnePercent: 0,
+        range, from: from.toISOString(), to: to.toISOString(),
+      });
+      return;
+    }
+
+    // Get all player playtimes for the Lorenz curve and concentration stats
+    const { rows: allTimes } = await pool.query(
+      `SELECT SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))::bigint AS pt
+       FROM sessions
+       WHERE game_id = $1 AND started_at >= $2 AND started_at <= $3 AND ended_at IS NOT NULL
+       GROUP BY player_id
+       HAVING SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) > 0
+       ORDER BY pt ASC`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+
+    const times = allTimes.map((r) => parseInt(r.pt, 10));
+    const totalPt = times.reduce((a, b) => a + b, 0);
+    const n = times.length;
+
+    // Build Lorenz curve: sample ~50 points
+    const curvePoints: { playerPct: number; playtimePct: number }[] = [{ playerPct: 0, playtimePct: 0 }];
+    const sampleCount = Math.min(50, n);
+    let cumulative = 0;
+    let nextSample = 1;
+    for (let i = 0; i < n; i++) {
+      cumulative += times[i];
+      const playerPct = ((i + 1) / n) * 100;
+      const targetPct = (nextSample / sampleCount) * 100;
+      if (playerPct >= targetPct || i === n - 1) {
+        curvePoints.push({
+          playerPct: Math.round(playerPct * 10) / 10,
+          playtimePct: Math.round((cumulative / totalPt) * 1000) / 10,
+        });
+        nextSample++;
+      }
+    }
+
+    // Concentration stats: what % of playtime comes from top 10% and top 1%
+    const top10Idx = Math.max(0, n - Math.ceil(n * 0.1));
+    const top1Idx = Math.max(0, n - Math.ceil(n * 0.01));
+    const top10Sum = times.slice(top10Idx).reduce((a, b) => a + b, 0);
+    const top1Sum = times.slice(top1Idx).reduce((a, b) => a + b, 0);
+
+    res.json({
+      percentiles: {
+        p10: parseInt(perc.p10, 10) || 0,
+        p25: parseInt(perc.p25, 10) || 0,
+        p50: parseInt(perc.p50, 10) || 0,
+        p75: parseInt(perc.p75, 10) || 0,
+        p90: parseInt(perc.p90, 10) || 0,
+        p99: parseInt(perc.p99, 10) || 0,
+      },
+      curve: curvePoints,
+      totalPlayers: n,
+      totalPlaytimeSeconds: totalPt,
+      topTenPercent: Math.round((top10Sum / totalPt) * 1000) / 10,
+      topOnePercent: Math.round((top1Sum / totalPt) * 1000) / 10,
+      range, from: from.toISOString(), to: to.toISOString(),
+    });
+  } catch (error) {
+    console.error('Playtime distribution error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── Roblox user resolution helper (batch, with cache) ──
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
