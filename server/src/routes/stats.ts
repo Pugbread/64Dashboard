@@ -128,6 +128,86 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
   }
 });
 
+// GET /api/stats/:gameId/top-spenders — top spenders by robux spent
+router.get('/:gameId/top-spenders', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const rangeRaw = String(req.query.range || '7d');
+    const range: Range = VALID_RANGES.includes(rangeRaw as Range) ? (rangeRaw as Range) : '7d';
+
+    const to = new Date();
+    const from = new Date(to.getTime() - RANGE_MS[range]);
+
+    // Verify game
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    // Query purchases grouped by player
+    const { rows } = await pool.query(
+      `SELECT player_id,
+              SUM(price_robux)::int AS spent,
+              COUNT(*)::int AS purchases
+       FROM purchases
+       WHERE game_id = $1 AND created_at >= $2 AND created_at <= $3
+       GROUP BY player_id
+       ORDER BY spent DESC
+       LIMIT 20`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+
+    if (rows.length === 0) {
+      res.json({ spenders: [], range, from: from.toISOString(), to: to.toISOString() });
+      return;
+    }
+
+    // Resolve usernames and avatars from Roblox
+    const playerIds = rows.map((r) => r.player_id);
+    const usernameMap: Record<string, string> = {};
+    const avatarMap: Record<string, string | null> = {};
+
+    // Fetch usernames via POST /v1/users
+    try {
+      const userRes = await fetch('https://users.roblox.com/v1/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: playerIds.map(Number), excludeBannedUsers: false }),
+      });
+      const userData: any = await userRes.json();
+      if (Array.isArray(userData?.data)) {
+        for (const u of userData.data) {
+          usernameMap[String(u.id)] = u.displayName || u.name || String(u.id);
+        }
+      }
+    } catch { /* ignore */ }
+
+    // Fetch avatar headshots
+    try {
+      const avatarRes = await fetch(
+        `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${playerIds.join(',')}&size=150x150&format=Png&isCircular=false`
+      );
+      const avatarData: any = await avatarRes.json();
+      if (Array.isArray(avatarData?.data)) {
+        for (const a of avatarData.data) {
+          avatarMap[String(a.targetId)] = a.imageUrl || null;
+        }
+      }
+    } catch { /* ignore */ }
+
+    const spenders = rows.map((r) => ({
+      playerId: r.player_id,
+      displayName: usernameMap[r.player_id] || r.player_id,
+      avatarUrl: avatarMap[r.player_id] || null,
+      spent: r.spent,
+      purchases: r.purchases,
+    }));
+
+    res.json({ spenders, range, from: from.toISOString(), to: to.toISOString() });
+  } catch (error) {
+    console.error('Top spenders error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/stats/:gameId/:category — stats for one category
 router.get('/:gameId/:category', async (req: Request, res: Response) => {
   try {
