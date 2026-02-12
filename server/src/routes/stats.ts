@@ -194,8 +194,9 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
     const from = new Date(to.getTime() - RANGE_MS[range]);
 
     // Verify game
-    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    const { rows: gameRows } = await pool.query('SELECT id, universe_id FROM games WHERE id = $1', [gameId]);
     if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+    const universeId = gameRows[0].universe_id ? String(gameRows[0].universe_id) : null;
 
     // Count total distinct products
     const { rows: countRows } = await pool.query(
@@ -241,14 +242,55 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
           return;
         }
 
-        // DevProducts: direct thumbnail endpoint can return incorrect images.
-        // Resolve icon asset IDs first, then fetch thumbnails by asset.
         const assetByProductId: Record<string, string> = {};
-        await Promise.all(ids.map(async (productId) => {
+
+        // Prefer universe listing API for batch resolution.
+        if (universeId) {
           try {
-            const infoResp = await fetch(`https://economy.roblox.com/v2/developer-products/${productId}/info`);
+            let pageNumber = 1;
+            let done = false;
+            while (!done && pageNumber <= 10) {
+              const listResp = await fetch(
+                `https://apis.roblox.com/developer-products/v1/universes/${universeId}/developerproducts?pageNumber=${pageNumber}&pageSize=50`
+              );
+              const listData: any = await listResp.json();
+              const pageItems = Array.isArray(listData?.developerProducts)
+                ? listData.developerProducts
+                : Array.isArray(listData?.data)
+                  ? listData.data
+                  : [];
+
+              if (pageItems.length === 0) break;
+
+              for (const item of pageItems) {
+                const pid = String(
+                  item?.developerProductId ?? item?.id ?? item?.productId ?? ''
+                );
+                if (!pid || !ids.includes(pid)) continue;
+                const rawAssetId =
+                  item?.iconImageAssetId ?? item?.IconImageAssetId ?? item?.iconAssetId ?? item?.imageAssetId;
+                const assetId = rawAssetId ? String(rawAssetId) : '';
+                if (assetId) assetByProductId[pid] = assetId;
+              }
+
+              done =
+                pageItems.length < 50 ||
+                !ids.some((pid) => !assetByProductId[pid]);
+              pageNumber += 1;
+            }
+          } catch { /* ignore universe listing failures */ }
+        }
+
+        // Fallback: query unresolved products individually.
+        const unresolved = ids.filter((productId) => !assetByProductId[productId]);
+        await Promise.all(unresolved.map(async (productId) => {
+          try {
+            const infoResp = await fetch(
+              `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`
+            );
             const info: any = await infoResp.json();
-            const rawAssetId = info?.IconImageAssetId ?? info?.iconImageAssetId ?? info?.IconImageAssetID;
+            const rawAssetId =
+              info?.iconImageAssetId ?? info?.IconImageAssetId ?? info?.iconAssetId ?? info?.imageAssetId;
             const assetId = rawAssetId ? String(rawAssetId) : '';
             if (assetId) assetByProductId[productId] = assetId;
           } catch { /* ignore per-product errors */ }

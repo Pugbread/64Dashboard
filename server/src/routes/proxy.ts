@@ -59,6 +59,7 @@ router.get('/product-icons', async (req: Request, res: Response) => {
   try {
     const ids = String(req.query.ids || '');
     const productType = String(req.query.type || 'devproduct');
+    const universeId = req.query.universeId ? String(req.query.universeId) : null;
 
     if (!ids) {
       res.json({});
@@ -84,14 +85,53 @@ router.get('/product-icons', async (req: Request, res: Response) => {
       return;
     }
 
-    // DevProducts: resolve icon asset IDs first, then fetch via assets thumbnail API.
+    // DevProducts: resolve icon asset IDs via Developer Products API.
     const productIds = idList;
     const assetByProductId: Record<string, string> = {};
-    await Promise.all(productIds.map(async (productId) => {
+
+    if (universeId) {
       try {
-        const infoResp = await fetch(`https://economy.roblox.com/v2/developer-products/${productId}/info`);
+        let pageNumber = 1;
+        let done = false;
+        while (!done && pageNumber <= 10) {
+          const listResp = await fetch(
+            `https://apis.roblox.com/developer-products/v1/universes/${universeId}/developerproducts?pageNumber=${pageNumber}&pageSize=50`
+          );
+          const listData: any = await listResp.json();
+          const pageItems = Array.isArray(listData?.developerProducts)
+            ? listData.developerProducts
+            : Array.isArray(listData?.data)
+              ? listData.data
+              : [];
+
+          if (pageItems.length === 0) break;
+
+          for (const item of pageItems) {
+            const pid = String(item?.developerProductId ?? item?.id ?? item?.productId ?? '');
+            if (!pid || !productIds.includes(pid)) continue;
+            const rawAssetId =
+              item?.iconImageAssetId ?? item?.IconImageAssetId ?? item?.iconAssetId ?? item?.imageAssetId;
+            const assetId = rawAssetId ? String(rawAssetId) : '';
+            if (assetId) assetByProductId[pid] = assetId;
+          }
+
+          done =
+            pageItems.length < 50 ||
+            !productIds.some((pid) => !assetByProductId[pid]);
+          pageNumber += 1;
+        }
+      } catch { /* ignore universe listing failures */ }
+    }
+
+    const unresolved = productIds.filter((productId) => !assetByProductId[productId]);
+    await Promise.all(unresolved.map(async (productId) => {
+      try {
+        const infoResp = await fetch(
+          `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`
+        );
         const info: any = await infoResp.json();
-        const rawAssetId = info?.IconImageAssetId ?? info?.iconImageAssetId ?? info?.IconImageAssetID;
+        const rawAssetId =
+          info?.iconImageAssetId ?? info?.IconImageAssetId ?? info?.iconAssetId ?? info?.imageAssetId;
         const assetId = rawAssetId ? String(rawAssetId) : '';
         if (assetId) assetByProductId[productId] = assetId;
       } catch { /* ignore per-product errors */ }
@@ -164,13 +204,12 @@ router.get('/product-name/:productId', async (req: Request, res: Response) => {
     if (type === 'gamepass') {
       url = `https://economy.roblox.com/v1/game-pass/${productId}/game-pass-product-info`;
     } else {
-      url = `https://economy.roblox.com/v2/developer-products/${productId}/info`;
+      url = `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`;
     }
 
     const response = await fetch(url);
     const data: any = await response.json();
-    // Dev product returns { Name: ... }, gamepass returns { Name: ... }
-    res.json({ name: data.Name || data.name || null });
+    res.json({ name: data.Name || data.name || data.displayName || null });
   } catch {
     res.json({ name: null });
   }
