@@ -78,7 +78,7 @@ async function queryAccumulationCurve(
        FROM sessions
        WHERE game_id = $1
        GROUP BY player_id
-       HAVING DATE(MIN(started_at)) = $2::date
+       HAVING (MIN(started_at) AT TIME ZONE 'UTC')::date = $2::date
      ),
      cohort_size AS (
        SELECT COUNT(*) AS cnt FROM cohort
@@ -101,7 +101,7 @@ async function queryAccumulationCurve(
      LEFT JOIN sessions s
        ON  s.game_id   = $1
        AND s.player_id = c.player_id
-       AND DATE(s.started_at) = ($2::date + $5::int)
+       AND (s.started_at AT TIME ZONE 'UTC')::date = ($2::date + $5::int)
        AND s.started_at <= b.bucket_end
      GROUP BY b.bucket_end
      ORDER BY b.bucket_end ASC`,
@@ -149,7 +149,7 @@ async function queryDaily(
 
   const { rows } = await pool.query(
     `WITH first_play AS (
-       SELECT player_id, DATE(MIN(started_at)) AS first_day
+       SELECT player_id, (MIN(started_at) AT TIME ZONE 'UTC')::date AS first_day
        FROM sessions
        WHERE game_id = $1
        GROUP BY player_id
@@ -167,7 +167,7 @@ async function queryDaily(
        INNER JOIN sessions s
          ON  s.game_id   = $1
          AND s.player_id = fp.player_id
-         AND DATE(s.started_at) = fp.first_day + $4::int
+         AND (s.started_at AT TIME ZONE 'UTC')::date = fp.first_day + $4::int
        WHERE fp.first_day >= $2::date
          AND fp.first_day < $3::date
        GROUP BY fp.first_day
