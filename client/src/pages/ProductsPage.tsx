@@ -94,12 +94,12 @@ export default function ProductsPage({ selectedGameId }: Props) {
 
       {hasData && (
         <div className="space-y-5">
-          {sortedTower.length > 0 && <ProductTowers products={sortedTower} sortField={sortField} />}
           <ProductFlows
             flows={flowsData?.flows ?? []}
             totalNewBuyers={flowsData?.totalNewBuyers ?? 0}
             loading={flowsLoading}
           />
+          {sortedTower.length > 0 && <ProductTowers products={sortedTower} sortField={sortField} />}
           {data && data.products.length > 0 && (
             <ProductTable
               products={data.products}
