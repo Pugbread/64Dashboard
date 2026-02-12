@@ -96,6 +96,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
   const [soundOn, setSoundOn] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevCountRef = useRef(0);
 
   // Caches for resolved data (persist across renders)
   const playerCache = useRef<Map<string, { displayName: string | null; avatarUrl: string | null }>>(new Map());
@@ -187,6 +188,61 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     }
   }, []);
 
+  // Load initial recent purchases
+  const initialLoaded = useRef(false);
+  useEffect(() => {
+    if (!selectedGameId || initialLoaded.current) return;
+    initialLoaded.current = true;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/stats/${selectedGameId}/recent-purchases?limit=25`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const initial: LivePurchase[] = (data.purchases || []).map((raw: RawPurchase) => {
+          const playerData = playerCache.current.get(raw.playerId);
+          const nameKey = `${raw.productType}:${raw.productId}`;
+          return {
+            ...raw,
+            uid: `init-${uidCounter++}`,
+            displayName: playerData?.displayName || null,
+            avatarUrl: playerData?.avatarUrl || null,
+            productIconUrl: productIconCache.current.get(nameKey) ?? null,
+            resolvedProductName: productNameCache.current.get(nameKey) ?? null,
+            isNew: false,
+          };
+        });
+
+        setPurchases(initial);
+
+        // Resolve all players and products
+        const playerIds = new Set(initial.map((p) => p.playerId));
+        const productKeys = new Set(initial.map((p) => `${p.productType}:${p.productId}`));
+
+        for (const pid of playerIds) resolvePlayer(pid);
+        for (const key of productKeys) {
+          const [type, id] = key.split(':');
+          resolveProductName(id, type);
+          resolveProductIcon(id, type);
+        }
+      } catch (e) {
+        console.error('Failed to load recent purchases:', e);
+      }
+    })();
+  }, [selectedGameId, resolvePlayer, resolveProductName, resolveProductIcon]);
+
+  // Reset when game changes
+  useEffect(() => {
+    initialLoaded.current = false;
+    setPurchases([]);
+    prevCountRef.current = 0;
+  }, [selectedGameId]);
+
   // WebSocket connection
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -274,7 +330,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
   }, [purchases]);
 
   // Play sound when a new purchase for the current game arrives
-  const prevCountRef = useRef(0);
   useEffect(() => {
     const filtered = purchases.filter((p) => !selectedGameId || p.gameId === selectedGameId);
     if (filtered.length > prevCountRef.current && soundOn) {

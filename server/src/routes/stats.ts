@@ -60,6 +60,41 @@ router.get('/:gameId/ccu', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/stats/:gameId/recent-purchases — last N purchases for the live feed
+router.get('/:gameId/recent-purchases', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const limit = Math.min(25, Math.max(1, parseInt(String(req.query.limit || '25'), 10) || 25));
+
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    const { rows } = await pool.query(
+      `SELECT product_id, product_name, product_type, player_id, price_robux, created_at
+       FROM purchases
+       WHERE game_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [gameId, limit]
+    );
+
+    const purchases = rows.map((r) => ({
+      gameId,
+      playerId: r.player_id,
+      productId: r.product_id,
+      productName: r.product_name,
+      productType: r.product_type,
+      priceRobux: Number(r.price_robux || 0),
+      timestamp: new Date(r.created_at).toISOString(),
+    }));
+
+    res.json({ purchases });
+  } catch (error) {
+    console.error('Recent purchases error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/stats/:gameId/product-breakdown — revenue & sales per product (paginated)
 router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => {
   try {
