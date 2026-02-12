@@ -240,7 +240,7 @@ router.get('/product-name/:productId', async (req: Request, res: Response) => {
     if (type === 'gamepass') {
       url = `https://economy.roblox.com/v1/game-pass/${productId}/game-pass-product-info`;
     } else {
-      const meta = await fetchDevProductMeta(productId);
+      const meta = await fetchDevProductMeta(String(productId));
       res.json({ name: meta.name });
       return;
     }
