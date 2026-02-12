@@ -92,7 +92,7 @@ async function queryAccumulationCurve(
      LEFT JOIN sessions s
        ON  s.game_id   = $1
        AND s.player_id = c.player_id
-       AND DATE(s.started_at) = ($2::date + $5)
+       AND DATE(s.started_at) = ($2::date + $5::int)
        AND s.started_at <= b.bucket_end
      GROUP BY b.bucket_end
      ORDER BY b.bucket_end ASC`,
@@ -158,7 +158,7 @@ async function queryDaily(
        INNER JOIN sessions s
          ON  s.game_id   = $1
          AND s.player_id = fp.player_id
-         AND DATE(s.started_at) = fp.first_day + $4
+         AND DATE(s.started_at) = fp.first_day + $4::int
        WHERE fp.first_day >= $2::date
          AND fp.first_day < $3::date
        GROUP BY fp.first_day
