@@ -9,8 +9,7 @@ export const d1RetentionProvider: StatProvider = {
   unit: '%',
   format: 'percentage',
 
-  async query(pool: Pool, gameId: string, from: Date, to: Date, _interval: Interval): Promise<TimeSeriesResult> {
-    // Retention is always daily — ignore the user-selected interval
-    return queryCohortRetention(pool, gameId, from, to, 1);
+  async query(pool: Pool, gameId: string, from: Date, to: Date, interval: Interval): Promise<TimeSeriesResult> {
+    return queryCohortRetention(pool, gameId, from, to, 1, interval);
   },
 };
