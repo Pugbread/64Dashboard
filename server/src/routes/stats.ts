@@ -229,14 +229,49 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
     const fetchIcons = async (ids: string[], type: string) => {
       if (ids.length === 0) return;
       try {
-        const url = type === 'gamepass'
-          ? `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${ids.join(',')}&size=150x150&format=Png&isCircular=false`
-          : `https://thumbnails.roblox.com/v1/developer-products/icons?developerProductIds=${ids.join(',')}&size=150x150&format=Png&isCircular=false`;
-        const resp = await fetch(url);
-        const data: any = await resp.json();
-        if (Array.isArray(data?.data)) {
-          for (const item of data.data) {
-            iconMap[String(item.targetId)] = item.imageUrl || null;
+        if (type === 'gamepass') {
+          const url = `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${ids.join(',')}&size=150x150&format=Png&isCircular=false`;
+          const resp = await fetch(url);
+          const data: any = await resp.json();
+          if (Array.isArray(data?.data)) {
+            for (const item of data.data) {
+              iconMap[String(item.targetId)] = item.imageUrl || null;
+            }
+          }
+          return;
+        }
+
+        // DevProducts: direct thumbnail endpoint can return incorrect images.
+        // Resolve icon asset IDs first, then fetch thumbnails by asset.
+        const assetByProductId: Record<string, string> = {};
+        await Promise.all(ids.map(async (productId) => {
+          try {
+            const infoResp = await fetch(`https://economy.roblox.com/v2/developer-products/${productId}/info`);
+            const info: any = await infoResp.json();
+            const rawAssetId = info?.IconImageAssetId ?? info?.iconImageAssetId ?? info?.IconImageAssetID;
+            const assetId = rawAssetId ? String(rawAssetId) : '';
+            if (assetId) assetByProductId[productId] = assetId;
+          } catch { /* ignore per-product errors */ }
+        }));
+
+        const uniqueAssetIds = Array.from(new Set(Object.values(assetByProductId)));
+        if (uniqueAssetIds.length === 0) return;
+
+        const assetResp = await fetch(
+          `https://thumbnails.roblox.com/v1/assets?assetIds=${uniqueAssetIds.join(',')}&size=150x150&format=Png&isCircular=false`
+        );
+        const assetData: any = await assetResp.json();
+        const assetIconMap: Record<string, string | null> = {};
+        if (Array.isArray(assetData?.data)) {
+          for (const item of assetData.data) {
+            assetIconMap[String(item.targetId)] = item.imageUrl || null;
+          }
+        }
+
+        for (const productId of ids) {
+          const assetId = assetByProductId[productId];
+          if (assetId) {
+            iconMap[productId] = assetIconMap[assetId] || null;
           }
         }
       } catch { /* ignore icon fetch failures */ }
