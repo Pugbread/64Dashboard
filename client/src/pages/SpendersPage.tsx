@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTopSpenders, SpenderEntry } from '../hooks/useTopSpenders';
-import { SpenderTowers, SpenderTable, SpenderSort } from '../components/ProductBreakdown';
+import { SpenderTowers, SpenderTable, SpenderSort, SortDir } from '../components/ProductBreakdown';
 import Dropdown from '../components/Dropdown';
 import { Crown } from 'lucide-react';
 
@@ -21,7 +21,17 @@ export default function SpendersPage({ selectedGameId }: Props) {
   const [range, setRange] = useState('24h');
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<SpenderSort>('spent');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const { data, loading } = useTopSpenders(selectedGameId, range, page);
+
+  const handleSortChange = (field: SpenderSort) => {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortField(field);
+      setSortDir('desc');
+    }
+  };
 
   // Cache top 10 from page 1 for towers
   const [top5, setTop5] = useState<SpenderEntry[]>([]);
@@ -49,7 +59,10 @@ export default function SpendersPage({ selectedGameId }: Props) {
     );
   }
 
-  const sortedTower = [...top5].sort((a, b) => sortField === 'spent' ? b.spent - a.spent : b.purchases - a.purchases);
+  const sortedTower = [...top5].sort((a, b) => {
+    const diff = sortField === 'spent' ? b.spent - a.spent : b.purchases - a.purchases;
+    return sortDir === 'asc' ? -diff : diff;
+  });
   const totalPages = data?.totalPages ?? 1;
   const hasData = (data && data.spenders.length > 0) || top5.length > 0;
 
@@ -84,7 +97,8 @@ export default function SpendersPage({ selectedGameId }: Props) {
             <SpenderTable
               spenders={data.spenders}
               sortField={sortField}
-              onSortChange={setSortField}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
               page={page}
               totalPages={totalPages}
               onPageChange={setPage}

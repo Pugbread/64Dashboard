@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
-import { ProductTowers, ProductTable, ProductSort, getProductValue } from '../components/ProductBreakdown';
+import { ProductTowers, ProductTable, ProductSort, SortDir, getProductValue } from '../components/ProductBreakdown';
 import Dropdown from '../components/Dropdown';
 import { Package } from 'lucide-react';
 
@@ -21,7 +21,17 @@ export default function ProductsPage({ selectedGameId }: Props) {
   const [range, setRange] = useState('24h');
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<ProductSort>('revenue');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const { data, loading } = useProductBreakdown(selectedGameId, range, page);
+
+  const handleSortChange = (field: ProductSort) => {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortField(field);
+      setSortDir('desc');
+    }
+  };
 
   // Cache top 10 from page 1 for towers
   const [top5, setTop5] = useState<ProductEntry[]>([]);
@@ -49,7 +59,10 @@ export default function ProductsPage({ selectedGameId }: Props) {
     );
   }
 
-  const sortedTower = [...top5].sort((a, b) => getProductValue(b, sortField) - getProductValue(a, sortField));
+  const sortedTower = [...top5].sort((a, b) => {
+    const diff = getProductValue(b, sortField) - getProductValue(a, sortField);
+    return sortDir === 'asc' ? -diff : diff;
+  });
   const totalPages = data?.totalPages ?? 1;
   const hasData = (data && data.products.length > 0) || top5.length > 0;
 
@@ -84,7 +97,8 @@ export default function ProductsPage({ selectedGameId }: Props) {
             <ProductTable
               products={data.products}
               sortField={sortField}
-              onSortChange={setSortField}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
               page={page}
               totalPages={totalPages}
               onPageChange={setPage}

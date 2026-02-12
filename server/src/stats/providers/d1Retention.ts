@@ -130,7 +130,7 @@ async function queryDaily(
          AND fp.first_day < $3::date
        GROUP BY fp.first_day
      )
-     SELECT c.first_day AS date,
+     SELECT c.first_day::text AS date,
             ROUND(COALESCE(r.retained_count, 0)::NUMERIC
                   / NULLIF(c.cohort_size, 0) * 100, 2) AS value
      FROM cohorts c
@@ -139,15 +139,15 @@ async function queryDaily(
     [gameId, from.toISOString(), to.toISOString()]
   );
 
-  // Tag yesterday's data point as partial
+  // Only yesterday's cohort is still accumulating (their D1 window is today)
   const now = new Date();
   const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = yesterday.toISOString().split('T')[0]; // "YYYY-MM-DD"
 
   return {
     type: 'timeseries',
     data: rows.map((r) => {
-      const dateStr = r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date);
+      const dateStr = String(r.date).slice(0, 10); // already text from SQL, but be safe
       return {
         date: dateStr,
         value: Number(r.value || 0),

@@ -1,9 +1,10 @@
-import { Package, ShoppingBag, Trophy, ArrowUpDown, User, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, ShoppingBag, Trophy, ArrowUp, ArrowDown, ArrowUpDown, User, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductEntry } from '../hooks/useProductBreakdown';
 import { SpenderEntry } from '../hooks/useTopSpenders';
 
 export type ProductSort = 'revenue' | 'sales' | 'avgSession' | 'avgPlaytime' | 'repeat';
 export type SpenderSort = 'spent' | 'purchases';
+export type SortDir = 'desc' | 'asc';
 
 export function formatRobux(value: number): string {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2)}M`;
@@ -244,15 +245,25 @@ function formatMinutesFull(mins: number | null): string {
   return `${mins.toFixed(1)} minutes`;
 }
 
-export function ProductTable({ products, sortField, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
+export function ProductTable({ products, sortField, sortDir, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; sortDir: SortDir; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (products.length === 0) return null;
-  const sorted = [...products].sort((a, b) => getProductValue(b, sortField) - getProductValue(a, sortField));
+  const sorted = [...products].sort((a, b) => {
+    const diff = getProductValue(b, sortField) - getProductValue(a, sortField);
+    return sortDir === 'asc' ? -diff : diff;
+  });
+
+  const sortIcon = (field: ProductSort) => {
+    if (sortField !== field) return <ArrowUpDown size={10} className="opacity-0 group-hover:opacity-50" />;
+    return sortDir === 'desc'
+      ? <ArrowDown size={10} className="opacity-100" />
+      : <ArrowUp size={10} className="opacity-100" />;
+  };
 
   const thBtn = (field: ProductSort, label: string) => (
     <th className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right whitespace-nowrap" onClick={() => onSortChange(field)}>
       <span className={`inline-flex items-center gap-1 ${sortField === field ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'}`}>
         {label}
-        <ArrowUpDown size={10} className={sortField === field ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} />
+        {sortIcon(field)}
       </span>
     </th>
   );
@@ -329,15 +340,25 @@ export function ProductTable({ products, sortField, onSortChange, page, totalPag
 
 /* ─── Spender table ─── */
 
-export function SpenderTable({ spenders, sortField, onSortChange, page, totalPages, onPageChange }: { spenders: SpenderEntry[]; sortField: SpenderSort; onSortChange: (f: SpenderSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
+export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page, totalPages, onPageChange }: { spenders: SpenderEntry[]; sortField: SpenderSort; sortDir: SortDir; onSortChange: (f: SpenderSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (spenders.length === 0) return null;
-  const sorted = [...spenders].sort((a, b) => sortField === 'spent' ? b.spent - a.spent : b.purchases - a.purchases);
+  const sorted = [...spenders].sort((a, b) => {
+    const diff = (sortField === 'spent' ? b.spent - a.spent : b.purchases - a.purchases);
+    return sortDir === 'asc' ? -diff : diff;
+  });
+
+  const sortIcon = (field: SpenderSort) => {
+    if (sortField !== field) return <ArrowUpDown size={10} className="opacity-0 group-hover:opacity-50" />;
+    return sortDir === 'desc'
+      ? <ArrowDown size={10} className="opacity-100" />
+      : <ArrowUp size={10} className="opacity-100" />;
+  };
 
   const thBtn = (field: SpenderSort, label: string) => (
     <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right" onClick={() => onSortChange(field)}>
       <span className={`inline-flex items-center gap-1 ${sortField === field ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'}`}>
         {label}
-        <ArrowUpDown size={10} className={sortField === field ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} />
+        {sortIcon(field)}
       </span>
     </th>
   );
