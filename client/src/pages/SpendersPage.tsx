@@ -23,12 +23,12 @@ export default function SpendersPage({ selectedGameId }: Props) {
   const [sortField, setSortField] = useState<SpenderSort>('spent');
   const { data, loading } = useTopSpenders(selectedGameId, range, page);
 
-  // Cache top 5 from page 1 for towers
+  // Cache top 10 from page 1 for towers
   const [top5, setTop5] = useState<SpenderEntry[]>([]);
 
   useEffect(() => {
     if (data && page === 1 && data.spenders.length > 0) {
-      setTop5([...data.spenders].sort((a, b) => b.spent - a.spent).slice(0, 5));
+      setTop5([...data.spenders].sort((a, b) => b.spent - a.spent).slice(0, 10));
     }
   }, [data, page]);
 

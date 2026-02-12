@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
-import { ProductTowers, ProductTable, ProductSort } from '../components/ProductBreakdown';
+import { ProductTowers, ProductTable, ProductSort, getProductValue } from '../components/ProductBreakdown';
 import Dropdown from '../components/Dropdown';
 import { Package } from 'lucide-react';
 
@@ -23,12 +23,12 @@ export default function ProductsPage({ selectedGameId }: Props) {
   const [sortField, setSortField] = useState<ProductSort>('revenue');
   const { data, loading } = useProductBreakdown(selectedGameId, range, page);
 
-  // Cache top 5 from page 1 for towers
+  // Cache top 10 from page 1 for towers
   const [top5, setTop5] = useState<ProductEntry[]>([]);
 
   useEffect(() => {
     if (data && page === 1 && data.products.length > 0) {
-      setTop5([...data.products].sort((a, b) => b.revenue - a.revenue).slice(0, 5));
+      setTop5([...data.products].sort((a, b) => b.revenue - a.revenue).slice(0, 10));
     }
   }, [data, page]);
 
@@ -49,7 +49,7 @@ export default function ProductsPage({ selectedGameId }: Props) {
     );
   }
 
-  const sortedTower = [...top5].sort((a, b) => sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales);
+  const sortedTower = [...top5].sort((a, b) => getProductValue(b, sortField) - getProductValue(a, sortField));
   const totalPages = data?.totalPages ?? 1;
   const hasData = (data && data.products.length > 0) || top5.length > 0;
 

@@ -2,7 +2,7 @@ import { Package, ShoppingBag, Trophy, ArrowUpDown, User, Crown, ChevronLeft, Ch
 import { ProductEntry } from '../hooks/useProductBreakdown';
 import { SpenderEntry } from '../hooks/useTopSpenders';
 
-export type ProductSort = 'revenue' | 'sales';
+export type ProductSort = 'revenue' | 'sales' | 'avgSession' | 'avgPlaytime' | 'repeat';
 export type SpenderSort = 'spent' | 'purchases';
 
 export function formatRobux(value: number): string {
@@ -21,6 +21,11 @@ const TOWER_GRADIENTS = [
   'from-amber-600 to-amber-700',
   'from-blue-400 to-blue-500',
   'from-blue-400/70 to-blue-500/70',
+  'from-indigo-400 to-indigo-500',
+  'from-teal-400 to-teal-500',
+  'from-purple-400 to-purple-500',
+  'from-rose-400 to-rose-500',
+  'from-emerald-400 to-emerald-500',
 ];
 
 const TOWER_SHADOWS = [
@@ -29,18 +34,51 @@ const TOWER_SHADOWS = [
   '0 0 16px rgba(217,119,6,0.10)',
   '0 0 12px rgba(59,130,246,0.10)',
   '0 0 12px rgba(96,165,250,0.08)',
+  '0 0 10px rgba(99,102,241,0.08)',
+  '0 0 10px rgba(45,212,191,0.08)',
+  '0 0 10px rgba(168,85,247,0.08)',
+  '0 0 10px rgba(251,113,133,0.08)',
+  '0 0 10px rgba(52,211,153,0.08)',
 ];
 
-const RANK_LABELS = ['1st', '2nd', '3rd', '4th', '5th'];
+const RANK_LABELS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
 
 /* ─── Product towers ─── */
 
-export function ProductTowers({ products, sortField }: { products: ProductEntry[]; sortField: ProductSort }) {
-  const top5 = products.slice(0, 5);
-  if (top5.length === 0) return null;
+const SORT_LABELS: Record<ProductSort, string> = {
+  revenue: 'revenue',
+  sales: 'sales count',
+  avgSession: 'avg session time',
+  avgPlaytime: 'avg total playtime',
+  repeat: 'repeat spender rate',
+};
 
-  const getValue = (p: ProductEntry) => (sortField === 'revenue' ? p.revenue : p.sales);
-  const maxVal = Math.max(...top5.map(getValue), 1);
+export function getProductValue(p: ProductEntry, field: ProductSort): number {
+  switch (field) {
+    case 'sales': return p.sales;
+    case 'avgSession': return p.avgSessionMin ?? 0;
+    case 'avgPlaytime': return p.avgTotalPlaytimeMin ?? 0;
+    case 'repeat': return p.repeatSpenderRate ?? 0;
+    default: return p.revenue;
+  }
+}
+
+function formatProductValue(val: number, field: ProductSort): string {
+  switch (field) {
+    case 'sales': return val.toLocaleString();
+    case 'avgSession': return `${val.toFixed(1)}m`;
+    case 'avgPlaytime': return `${val.toFixed(1)}m`;
+    case 'repeat': return `${val}%`;
+    default: return formatRobux(val);
+  }
+}
+
+export function ProductTowers({ products, sortField }: { products: ProductEntry[]; sortField: ProductSort }) {
+  const top = products.slice(0, 10);
+  if (top.length === 0) return null;
+
+  const getValue = (p: ProductEntry) => getProductValue(p, sortField);
+  const maxVal = Math.max(...top.map(getValue), 1);
 
   return (
     <div className="card p-6 sm:p-7 flex-1 min-w-0">
@@ -48,49 +86,48 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
         <div className="flex items-center gap-2.5 mb-2">
           <Trophy size={16} className="text-yellow-400" />
           <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
-            Top {top5.length} Products
+            Top {top.length} Products
           </p>
         </div>
         <p className="text-text-muted text-[10px] mb-8">
-          By {sortField === 'revenue' ? 'revenue' : 'sales count'}
+          By {SORT_LABELS[sortField] || 'revenue'}
         </p>
 
-        <div className="flex items-end justify-center gap-2 sm:gap-4 h-[200px] sm:h-[240px] px-1">
-          {top5.map((product, i) => {
+        <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1">
+          {top.map((product, i) => {
             const val = getValue(product);
             const heightPct = Math.max((val / maxVal) * 100, 8);
             return (
-              <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[80px] h-full justify-end">
-                <p className="text-white text-[10px] sm:text-[12px] font-bold mb-1.5 text-center whitespace-nowrap cursor-default" title={sortField === 'revenue' ? formatRobuxFull(val) : val.toLocaleString()}>
-                  {sortField === 'revenue' ? formatRobux(val) : val.toLocaleString()}
+              <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
+                <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
+                  {formatProductValue(val, sortField)}
                 </p>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
                   {product.iconUrl ? (
                     <img src={product.iconUrl} alt={product.productName} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center"><Package size={12} className="text-text-muted" /></div>
+                    <div className="w-full h-full flex items-center justify-center"><Package size={10} className="text-text-muted" /></div>
                   )}
                 </div>
                 <div
-                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[4]} transition-all duration-700 ease-out relative`}
-                  style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[4] }}
+                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                  style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
                 >
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2">
-                    <span className="text-[9px] font-bold text-black/60">{RANK_LABELS[i]}</span>
-                  </div>
+                  {i < 5 && (
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                      <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="flex justify-center gap-2 sm:gap-4 mt-2.5 px-1">
-          {top5.map((product) => (
-            <div key={product.productId} className="flex-1 max-w-[80px] text-center">
-              <p className="text-text-secondary text-[9px] sm:text-[10px] font-medium truncate">{product.productName}</p>
-              <p className="text-text-muted text-[8px] sm:text-[9px] mt-0.5">
-                {sortField === 'revenue' ? `${product.sales.toLocaleString()} sales` : formatRobux(product.revenue)}
-              </p>
+        <div className="flex justify-center gap-1 sm:gap-2 mt-2 px-1">
+          {top.map((product) => (
+            <div key={product.productId} className="flex-1 max-w-[60px] text-center">
+              <p className="text-text-secondary text-[8px] sm:text-[9px] font-medium truncate">{product.productName}</p>
             </div>
           ))}
         </div>
@@ -102,11 +139,11 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
 /* ─── Spender towers ─── */
 
 export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[]; sortField: SpenderSort }) {
-  const top5 = spenders.slice(0, 5);
-  if (top5.length === 0) return null;
+  const top = spenders.slice(0, 10);
+  if (top.length === 0) return null;
 
   const getValue = (s: SpenderEntry) => (sortField === 'spent' ? s.spent : s.purchases);
-  const maxVal = Math.max(...top5.map(getValue), 1);
+  const maxVal = Math.max(...top.map(getValue), 1);
 
   return (
     <div className="card p-6 sm:p-7 flex-1 min-w-0">
@@ -114,49 +151,48 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
         <div className="flex items-center gap-2.5 mb-2">
           <Crown size={16} className="text-yellow-400" />
           <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
-            Top {top5.length} Spenders
+            Top {top.length} Spenders
           </p>
         </div>
         <p className="text-text-muted text-[10px] mb-8">
           By {sortField === 'spent' ? 'robux spent' : 'purchase count'}
         </p>
 
-        <div className="flex items-end justify-center gap-2 sm:gap-4 h-[200px] sm:h-[240px] px-1">
-          {top5.map((spender, i) => {
+        <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1">
+          {top.map((spender, i) => {
             const val = getValue(spender);
             const heightPct = Math.max((val / maxVal) * 100, 8);
             return (
-              <div key={spender.playerId} className="flex flex-col items-center flex-1 max-w-[80px] h-full justify-end">
-                <p className="text-white text-[10px] sm:text-[12px] font-bold mb-1.5 text-center whitespace-nowrap cursor-default" title={sortField === 'spent' ? formatRobuxFull(val) : val.toLocaleString()}>
+              <div key={spender.playerId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
+                <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
                   {sortField === 'spent' ? formatRobux(val) : val.toLocaleString()}
                 </p>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
                   {spender.avatarUrl ? (
                     <img src={spender.avatarUrl} alt={spender.displayName} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center"><User size={12} className="text-text-muted" /></div>
+                    <div className="w-full h-full flex items-center justify-center"><User size={10} className="text-text-muted" /></div>
                   )}
                 </div>
                 <div
-                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[4]} transition-all duration-700 ease-out relative`}
-                  style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[4] }}
+                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                  style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
                 >
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2">
-                    <span className="text-[9px] font-bold text-black/60">{RANK_LABELS[i]}</span>
-                  </div>
+                  {i < 5 && (
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                      <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="flex justify-center gap-2 sm:gap-4 mt-2.5 px-1">
-          {top5.map((spender) => (
-            <div key={spender.playerId} className="flex-1 max-w-[80px] text-center">
-              <p className="text-text-secondary text-[9px] sm:text-[10px] font-medium truncate">{spender.displayName}</p>
-              <p className="text-text-muted text-[8px] sm:text-[9px] mt-0.5">
-                {sortField === 'spent' ? `${spender.purchases.toLocaleString()} buys` : formatRobux(spender.spent)}
-              </p>
+        <div className="flex justify-center gap-1 sm:gap-2 mt-2 px-1">
+          {top.map((spender) => (
+            <div key={spender.playerId} className="flex-1 max-w-[60px] text-center">
+              <p className="text-text-secondary text-[8px] sm:text-[9px] font-medium truncate">{spender.displayName}</p>
             </div>
           ))}
         </div>
@@ -210,19 +246,15 @@ function formatMinutesFull(mins: number | null): string {
 
 export function ProductTable({ products, sortField, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (products.length === 0) return null;
-  const sorted = [...products].sort((a, b) => sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales);
+  const sorted = [...products].sort((a, b) => getProductValue(b, sortField) - getProductValue(a, sortField));
 
   const thBtn = (field: ProductSort, label: string) => (
-    <th className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right" onClick={() => onSortChange(field)}>
+    <th className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right whitespace-nowrap" onClick={() => onSortChange(field)}>
       <span className={`inline-flex items-center gap-1 ${sortField === field ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'}`}>
         {label}
         <ArrowUpDown size={10} className={sortField === field ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} />
       </span>
     </th>
-  );
-
-  const thLabel = (label: string) => (
-    <th className="px-3 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right whitespace-nowrap">{label}</th>
   );
 
   return (
@@ -242,9 +274,9 @@ export function ProductTable({ products, sortField, onSortChange, page, totalPag
                 <th className="px-3 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Type</th>
                 {thBtn('revenue', 'Revenue')}
                 {thBtn('sales', 'Sales')}
-                {thLabel('Avg Session')}
-                {thLabel('Avg Playtime')}
-                {thLabel('Repeat %')}
+                {thBtn('avgSession', 'Avg Session')}
+                {thBtn('avgPlaytime', 'Avg Playtime')}
+                {thBtn('repeat', 'Repeat %')}
               </tr>
             </thead>
             <tbody>
