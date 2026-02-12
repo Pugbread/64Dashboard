@@ -8,6 +8,8 @@ import { avgJoinsProvider } from './providers/avgJoins';
 import { revenueProvider } from './providers/revenue';
 import { purchasesProvider } from './providers/purchases';
 import { arpuProvider } from './providers/arpu';
+import { arppuProvider } from './providers/arppu';
+import { conversionRateProvider } from './providers/conversionRate';
 import { d1RetentionProvider } from './providers/d1Retention';
 
 class StatRegistry {
@@ -102,4 +104,6 @@ registry.register(avgJoinsProvider);
 registry.register(revenueProvider);
 registry.register(purchasesProvider);
 registry.register(arpuProvider);
+registry.register(arppuProvider);
+registry.register(conversionRateProvider);
 registry.register(d1RetentionProvider);
