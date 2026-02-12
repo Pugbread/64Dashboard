@@ -178,8 +178,10 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   padding: '10px 14px',
                 }}
-                formatter={(value: any, name: string) => {
+                formatter={(value: any, name: string, props: any) => {
                   if (value === null || value === undefined) return [null, null];
+                  // On bridge point (both solid & partial exist), skip the duplicate partial entry
+                  if (name === 'partial' && props?.payload?.solid != null) return [null, null];
                   const label = name === 'partial' ? `${provider.name} (accumulating)` : provider.name;
                   return [formatValue(Number(value), provider.format, provider.unit), label];
                 }}

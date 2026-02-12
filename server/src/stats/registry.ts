@@ -11,6 +11,7 @@ import { arpuProvider } from './providers/arpu';
 import { arppuProvider } from './providers/arppu';
 import { conversionRateProvider } from './providers/conversionRate';
 import { d1RetentionProvider } from './providers/d1Retention';
+import { d7RetentionProvider } from './providers/d7Retention';
 
 class StatRegistry {
   private providers: Map<string, StatProvider> = new Map();
@@ -107,3 +108,4 @@ registry.register(arpuProvider);
 registry.register(arppuProvider);
 registry.register(conversionRateProvider);
 registry.register(d1RetentionProvider);
+registry.register(d7RetentionProvider);
