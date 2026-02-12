@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, ChevronRight, X, Package, Crown, LayoutDashboard, UserSearch } from 'lucide-react';
+import { BarChart3, Gamepad2, LogOut, Users, DollarSign, TrendingUp, Layers, ChevronDown, ChevronRight, X, Package, Crown, LayoutDashboard, UserSearch, Radio } from 'lucide-react';
 import { Game } from '../hooks/useGames';
 
 interface SidebarProps {
@@ -36,6 +36,7 @@ const SUBCATEGORIES: Record<string, SubCategory[]> = {
     { path: '/revenue', label: 'Overview', icon: <LayoutDashboard size={16} strokeWidth={1.5} /> },
     { path: '/revenue/products', label: 'Products', icon: <Package size={16} strokeWidth={1.5} /> },
     { path: '/revenue/spenders', label: 'Spenders', icon: <Crown size={16} strokeWidth={1.5} /> },
+    { path: '/revenue/live', label: 'Live', icon: <Radio size={16} strokeWidth={1.5} /> },
   ],
 };
 

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db/pool';
+import { broadcastPurchase } from '../ws';
 
 const router = Router();
 
@@ -131,6 +132,18 @@ router.post('/purchase', async (req: Request, res: Response) => {
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [resolvedId, String(playerId), productType, productId, productName, priceRobux || 0]
     );
+
+    // Broadcast to live feed via WebSocket
+    broadcastPurchase({
+      gameId: resolvedId,
+      playerId: String(playerId),
+      productId: String(productId),
+      productName: String(productName),
+      productType: String(productType),
+      priceRobux: priceRobux || 0,
+      timestamp: new Date().toISOString(),
+    });
+
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Error recording purchase:', error);

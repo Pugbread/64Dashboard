@@ -89,4 +89,55 @@ router.get('/product-icons', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/proxy/user-info/:userId - Get Roblox display name and username
+router.get('/user-info/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const response = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+    const data: any = await response.json();
+    res.json({
+      displayName: data.displayName || null,
+      username: data.name || null,
+    });
+  } catch {
+    res.json({ displayName: null, username: null });
+  }
+});
+
+// GET /api/proxy/user-avatar/:userId - Get Roblox avatar headshot
+router.get('/user-avatar/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const response = await fetch(
+      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=48x48&format=Png&isCircular=false`
+    );
+    const data: any = await response.json();
+    res.json({ imageUrl: data?.data?.[0]?.imageUrl || null });
+  } catch {
+    res.json({ imageUrl: null });
+  }
+});
+
+// GET /api/proxy/product-name/:productId?type=devproduct|gamepass - Get actual product name from Roblox
+router.get('/product-name/:productId', async (req: Request, res: Response) => {
+  try {
+    const { productId } = req.params;
+    const type = String(req.query.type || 'devproduct');
+
+    let url: string;
+    if (type === 'gamepass') {
+      url = `https://economy.roblox.com/v1/game-pass/${productId}/game-pass-product-info`;
+    } else {
+      url = `https://economy.roblox.com/v2/developer-products/${productId}/info`;
+    }
+
+    const response = await fetch(url);
+    const data: any = await response.json();
+    // Dev product returns { Name: ... }, gamepass returns { Name: ... }
+    res.json({ name: data.Name || data.name || null });
+  } catch {
+    res.json({ name: null });
+  }
+});
+
 export default router;

@@ -1,3 +1,4 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -11,8 +12,10 @@ import gamesRoutes from './routes/games';
 import eventsRoutes from './routes/events';
 import statsRoutes from './routes/stats';
 import proxyRoutes from './routes/proxy';
+import { setupWebSocket } from './ws';
 
 const app = express();
+const server = http.createServer(app);
 
 // Middleware
 app.use(cors());
@@ -55,8 +58,11 @@ async function retry<T>(fn: () => Promise<T>, retries: number, delayMs: number):
 
 // Start server
 async function start() {
+  // Attach WebSocket server
+  setupWebSocket(server);
+
   // Start listening immediately so healthcheck passes
-  app.listen(config.port, '0.0.0.0', () => {
+  server.listen(config.port, '0.0.0.0', () => {
     console.log(`Server running on 0.0.0.0:${config.port}`);
   });
 

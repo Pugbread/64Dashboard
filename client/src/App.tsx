@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import CategoryPage from './pages/CategoryPage';
 import ProductsPage from './pages/ProductsPage';
 import SpendersPage from './pages/SpendersPage';
+import LivePurchasesPage from './pages/LivePurchasesPage';
 import UsersPage from './pages/UsersPage';
 import Games from './pages/Games';
 import TopBar from './components/TopBar';
@@ -136,6 +137,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
           ))}
           <Route path="/revenue/products" element={<ProductsPage selectedGameId={selectedGameId} />} />
           <Route path="/revenue/spenders" element={<SpendersPage selectedGameId={selectedGameId} />} />
+          <Route path="/revenue/live" element={<LivePurchasesPage selectedGameId={selectedGameId} />} />
           <Route path="/users" element={<UsersPage selectedGameId={selectedGameId} />} />
           <Route path="/games" element={<Games />} />
           <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
