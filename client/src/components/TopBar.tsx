@@ -32,15 +32,15 @@ export default function TopBar() {
   }, []);
 
   return (
-    <div className="hidden lg:flex items-center justify-end px-8 py-4 border-b border-border bg-bg-primary/80 backdrop-blur-sm sticky top-0 z-30">
-      <div className="flex items-center gap-5">
+    <div className="hidden lg:flex items-center justify-end px-8 py-3.5 border-b border-border/70 bg-bg-primary/75 backdrop-blur-md sticky top-0 z-30">
+      <div className="flex items-center gap-5 bg-bg-card/70 border border-border/80 rounded-card px-4 py-2.5 shadow-card">
         {/* Current UTC time */}
         <div className="flex items-center gap-2">
           <span className="text-text-muted text-[10px] font-medium uppercase tracking-wider">UTC</span>
           <span className="font-mono text-[13px] text-text-secondary font-semibold tracking-widest">{utcTime}</span>
         </div>
 
-        <div className="w-px h-4 bg-border" />
+        <div className="w-px h-4 bg-border/80" />
 
         {/* Countdown to new day */}
         <div className="flex items-center gap-2.5">
@@ -48,7 +48,7 @@ export default function TopBar() {
             <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[15px] text-white font-bold tracking-[0.15em]">{countdown}</span>
+            <span className="font-mono text-[14px] text-white font-bold tracking-[0.15em]">{countdown}</span>
             <span className="text-text-muted text-[9px] font-bold uppercase tracking-widest">UNTIL NEW DAY</span>
           </div>
         </div>

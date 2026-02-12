@@ -96,8 +96,8 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
     <div className="min-h-screen bg-bg-primary relative">
       {/* Atmospheric glow */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[30%] w-[700px] h-[500px] bg-accent/[0.03] rounded-full blur-[150px]" />
-        <div className="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] bg-accent/[0.02] rounded-full blur-[120px]" />
+        <div className="absolute top-[-12%] left-[34%] w-[760px] h-[520px] bg-accent/[0.035] rounded-full blur-[170px]" />
+        <div className="absolute bottom-[8%] right-[8%] w-[420px] h-[420px] bg-accent/[0.025] rounded-full blur-[130px]" />
       </div>
 
       {/* Mobile top bar */}
@@ -130,19 +130,21 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
       />
       <div className="lg:ml-[240px] pt-[60px] lg:pt-0 relative z-10 flex flex-col min-h-screen">
         <TopBar />
-        <main className="p-4 sm:p-6 lg:p-8 flex-1">
-        <Routes>
-          {categories.map((cat) => (
-            <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} selectedGameId={selectedGameId} />} />
-          ))}
-          <Route path="/revenue/products" element={<ProductsPage selectedGameId={selectedGameId} />} />
-          <Route path="/revenue/spenders" element={<SpendersPage selectedGameId={selectedGameId} />} />
-          <Route path="/revenue/live" element={<LivePurchasesPage selectedGameId={selectedGameId} />} />
-          <Route path="/users" element={<UsersPage selectedGameId={selectedGameId} />} />
-          <Route path="/games" element={<Games />} />
-          <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
-          <Route path="*" element={<Navigate to={`/${defaultCategory}`} replace />} />
-        </Routes>
+        <main className="p-4 sm:p-6 lg:p-8 xl:p-10 flex-1">
+          <div className="max-w-[1440px] mx-auto">
+            <Routes>
+              {categories.map((cat) => (
+                <Route key={cat} path={`/${cat}`} element={<CategoryPage category={cat} selectedGameId={selectedGameId} />} />
+              ))}
+              <Route path="/revenue/products" element={<ProductsPage selectedGameId={selectedGameId} />} />
+              <Route path="/revenue/spenders" element={<SpendersPage selectedGameId={selectedGameId} />} />
+              <Route path="/revenue/live" element={<LivePurchasesPage selectedGameId={selectedGameId} />} />
+              <Route path="/users" element={<UsersPage selectedGameId={selectedGameId} />} />
+              <Route path="/games" element={<Games />} />
+              <Route path="/" element={<Navigate to={`/${defaultCategory}`} replace />} />
+              <Route path="*" element={<Navigate to={`/${defaultCategory}`} replace />} />
+            </Routes>
+          </div>
         </main>
       </div>
     </div>

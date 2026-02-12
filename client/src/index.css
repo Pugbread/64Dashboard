@@ -11,8 +11,12 @@
   }
 
   body {
-    background: #080808;
+    background:
+      radial-gradient(1200px 700px at 65% -15%, rgba(59, 130, 246, 0.08), transparent 55%),
+      radial-gradient(900px 500px at 10% 120%, rgba(59, 130, 246, 0.05), transparent 60%),
+      #080808;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #fff;
   }
 
   ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -25,9 +29,10 @@
 
 @layer components {
   .card {
-    @apply bg-bg-card rounded-card relative;
-    border: 1px solid #1E1E22;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    @apply bg-bg-card/95 rounded-card relative;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(8px);
   }
 
   .card::before {
@@ -35,7 +40,7 @@
     position: absolute;
     inset: 0;
     border-radius: 4px;
-    background: linear-gradient(145deg, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+    background: linear-gradient(145deg, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
     pointer-events: none;
   }
 
@@ -43,8 +48,8 @@
     @apply transition-all duration-300 ease-out;
   }
   .card-hover:hover {
-    border-color: rgba(59, 130, 246, 0.15);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.06);
+    border-color: rgba(59, 130, 246, 0.22);
+    box-shadow: 0 12px 45px rgba(0, 0, 0, 0.55), 0 0 30px rgba(59, 130, 246, 0.08);
     transform: translateY(-1px);
   }
 
@@ -58,16 +63,16 @@
   .btn-primary {
     @apply px-5 py-2.5 text-sm font-semibold text-white rounded-btn transition-all duration-200;
     background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.25);
+    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
   .btn-primary:hover {
-    box-shadow: 0 4px 24px rgba(59, 130, 246, 0.35);
+    box-shadow: 0 10px 26px rgba(59, 130, 246, 0.33), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transform: translateY(-1px);
   }
   .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2); }
 
   .input-field {
-    @apply w-full bg-bg-elevated border border-border rounded-btn px-4 py-3 text-white text-sm
+    @apply w-full bg-bg-elevated/80 border border-border rounded-btn px-4 py-3 text-white text-sm
            focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20
            placeholder-text-muted transition-colors;
   }
