@@ -73,11 +73,20 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
     ? meta.providers.filter((p) => p.category === category)
     : [];
 
+  // Reset range and interval to correct defaults when switching categories
   useEffect(() => {
     if (category === 'retention') {
+      setRange('7d' as Range);
       setInterval('1d' as Interval);
-      return;
+    } else {
+      setRange('24h' as Range);
+      setInterval('1h' as Interval);
     }
+  }, [category]);
+
+  // Keep interval valid when range changes (non-retention only)
+  useEffect(() => {
+    if (category === 'retention') return;
     const available = getAvailableIntervals(range);
     if (!available.find((a) => a.value === interval)) {
       setInterval((DEFAULT_INTERVAL[range] || available[0]?.value || '1h') as Interval);
