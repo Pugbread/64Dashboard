@@ -6,6 +6,7 @@ import { avgSessionTimeProvider } from './providers/avgSessionTime';
 import { avgPlaytimeProvider } from './providers/avgPlaytime';
 import { avgJoinsProvider } from './providers/avgJoins';
 import { revenueProvider } from './providers/revenue';
+import { purchasesProvider } from './providers/purchases';
 import { arpuProvider } from './providers/arpu';
 import { d1RetentionProvider } from './providers/d1Retention';
 
@@ -99,5 +100,6 @@ registry.register(avgSessionTimeProvider);
 registry.register(avgPlaytimeProvider);
 registry.register(avgJoinsProvider);
 registry.register(revenueProvider);
+registry.register(purchasesProvider);
 registry.register(arpuProvider);
 registry.register(d1RetentionProvider);
