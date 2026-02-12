@@ -29,11 +29,20 @@ export async function queryCohortRetention(
   dayOffset: number,
   interval: Interval,
 ): Promise<TimeSeriesResult> {
-  const isSubDay = INTERVAL_SECONDS[interval] < 86400;
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const latestCohortDay = new Date(todayUTC.getTime() - dayOffset * 86400000);
+  const effectiveTo = new Date(Math.min(to.getTime(), latestCohortDay.getTime() + 86400000));
 
-  if (isSubDay) {
+  // Can the daily chart show at least one cohort in this range?
+  const hasDailyData = from < effectiveTo;
+
+  if (!hasDailyData) {
+    // Timeframe too short for any daily cohort → show accumulation curve
     return queryAccumulationCurve(pool, gameId, dayOffset, interval);
   }
+
+  // Otherwise always show daily cohort chart
   return queryDaily(pool, gameId, from, to, dayOffset);
 }
 
