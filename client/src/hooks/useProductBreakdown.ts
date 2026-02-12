@@ -8,6 +8,9 @@ export interface ProductEntry {
   revenue: number;
   sales: number;
   iconUrl: string | null;
+  avgSessionMin: number | null;
+  avgTotalPlaytimeMin: number | null;
+  repeatSpenderRate: number | null;
 }
 
 export interface ProductBreakdownResponse {

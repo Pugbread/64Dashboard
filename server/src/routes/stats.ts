@@ -127,6 +127,71 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
       fetchIcons(passIds, 'gamepass'),
     ]);
 
+    // ── Per-product engagement metrics (only for this page's products) ──
+    const pageProductIds = rows.map((r) => r.product_id);
+    const sessionMetrics: Record<string, { avgSessionMin: number; avgTotalPtMin: number }> = {};
+    const repeatRates: Record<string, number> = {};
+
+    if (pageProductIds.length > 0) {
+      // 1) Avg session time when purchasing + avg accumulated playtime when purchasing
+      try {
+        const { rows: smRows } = await pool.query(
+          `SELECT
+             p.product_id,
+             AVG(EXTRACT(EPOCH FROM (COALESCE(s.ended_at, NOW()) - s.started_at)) / 60) AS avg_session_min,
+             AVG(COALESCE(pt.total_sec, 0) / 60) AS avg_total_pt_min
+           FROM purchases p
+           LEFT JOIN LATERAL (
+             SELECT started_at, ended_at FROM sessions
+             WHERE player_id = p.player_id AND game_id = p.game_id
+               AND p.created_at >= started_at AND p.created_at <= COALESCE(ended_at, NOW())
+             ORDER BY started_at DESC LIMIT 1
+           ) s ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT SUM(EXTRACT(EPOCH FROM (COALESCE(ended_at, started_at) - started_at))) AS total_sec
+             FROM sessions
+             WHERE player_id = p.player_id AND game_id = p.game_id AND started_at <= p.created_at
+           ) pt ON TRUE
+           WHERE p.game_id = $1 AND p.created_at >= $2 AND p.created_at <= $3
+             AND p.product_id = ANY($4)
+           GROUP BY p.product_id`,
+          [gameId, from.toISOString(), to.toISOString(), pageProductIds]
+        );
+        for (const r of smRows) {
+          sessionMetrics[r.product_id] = {
+            avgSessionMin: Math.round((parseFloat(r.avg_session_min) || 0) * 10) / 10,
+            avgTotalPtMin: Math.round((parseFloat(r.avg_total_pt_min) || 0) * 10) / 10,
+          };
+        }
+      } catch (e) { console.error('Session metrics query error:', e); }
+
+      // 2) Post-purchase repeat spender rate
+      try {
+        const { rows: rrRows } = await pool.query(
+          `WITH first_buys AS (
+             SELECT player_id, product_id, MIN(created_at) AS first_buy
+             FROM purchases
+             WHERE game_id = $1 AND created_at >= $2 AND created_at <= $3
+               AND product_id = ANY($4)
+             GROUP BY player_id, product_id
+           )
+           SELECT fb.product_id,
+             ROUND(
+               COUNT(DISTINCT CASE WHEN p2.id IS NOT NULL THEN fb.player_id END)::numeric
+               / NULLIF(COUNT(DISTINCT fb.player_id), 0) * 100, 1
+             ) AS repeat_rate
+           FROM first_buys fb
+           LEFT JOIN purchases p2
+             ON p2.player_id = fb.player_id AND p2.game_id = $1 AND p2.created_at > fb.first_buy
+           GROUP BY fb.product_id`,
+          [gameId, from.toISOString(), to.toISOString(), pageProductIds]
+        );
+        for (const r of rrRows) {
+          repeatRates[r.product_id] = parseFloat(r.repeat_rate) || 0;
+        }
+      } catch (e) { console.error('Repeat rate query error:', e); }
+    }
+
     const products = rows.map((r) => ({
       productId: r.product_id,
       productName: r.product_name,
@@ -134,6 +199,9 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
       revenue: r.revenue,
       sales: r.sales,
       iconUrl: iconMap[r.product_id] || null,
+      avgSessionMin: sessionMetrics[r.product_id]?.avgSessionMin ?? null,
+      avgTotalPlaytimeMin: sessionMetrics[r.product_id]?.avgTotalPtMin ?? null,
+      repeatSpenderRate: repeatRates[r.product_id] ?? null,
     }));
 
     res.json({ products, total, page, limit, totalPages: Math.ceil(total / limit), range, from: from.toISOString(), to: to.toISOString() });

@@ -194,17 +194,35 @@ export function Pagination({ page, totalPages, onPageChange }: { page: number; t
 
 /* ─── Product table ─── */
 
+function formatMinutes(mins: number | null): string {
+  if (mins === null || mins === undefined) return '—';
+  if (mins < 1) return '<1m';
+  if (mins < 60) return `${mins.toFixed(1)}m`;
+  const h = Math.floor(mins / 60);
+  const rm = Math.round(mins % 60);
+  return `${h}h ${rm}m`;
+}
+
+function formatMinutesFull(mins: number | null): string {
+  if (mins === null || mins === undefined) return 'No data';
+  return `${mins.toFixed(1)} minutes`;
+}
+
 export function ProductTable({ products, sortField, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (products.length === 0) return null;
   const sorted = [...products].sort((a, b) => sortField === 'revenue' ? b.revenue - a.revenue : b.sales - a.sales);
 
   const thBtn = (field: ProductSort, label: string) => (
-    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right" onClick={() => onSortChange(field)}>
+    <th className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right" onClick={() => onSortChange(field)}>
       <span className={`inline-flex items-center gap-1 ${sortField === field ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'}`}>
         {label}
         <ArrowUpDown size={10} className={sortField === field ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'} />
       </span>
     </th>
+  );
+
+  const thLabel = (label: string) => (
+    <th className="px-3 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right whitespace-nowrap">{label}</th>
   );
 
   return (
@@ -221,9 +239,12 @@ export function ProductTable({ products, sortField, onSortChange, page, totalPag
             <thead>
               <tr className="border-t border-b border-border">
                 <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Product</th>
-                <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Type</th>
+                <th className="px-3 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Type</th>
                 {thBtn('revenue', 'Revenue')}
                 {thBtn('sales', 'Sales')}
+                {thLabel('Avg Session')}
+                {thLabel('Avg Playtime')}
+                {thLabel('Repeat %')}
               </tr>
             </thead>
             <tbody>
@@ -237,13 +258,32 @@ export function ProductTable({ products, sortField, onSortChange, page, totalPag
                       <span className="text-white text-[13px] font-medium truncate">{p.productName}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5">
+                  <td className="px-3 py-3.5">
                     <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-pill ${p.productType === 'gamepass' ? 'bg-purple-500/10 text-purple-400' : 'bg-accent/10 text-accent-light'}`}>
                       {p.productType === 'gamepass' ? 'Gamepass' : 'DevProduct'}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(p.revenue)}>{formatRobux(p.revenue)}</span></td>
-                  <td className="px-4 py-3.5 text-right pr-6 sm:pr-7"><span className="text-text-secondary text-[13px] font-medium cursor-default" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span></td>
+                  <td className="px-3 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(p.revenue)}>{formatRobux(p.revenue)}</span></td>
+                  <td className="px-3 py-3.5 text-right"><span className="text-text-secondary text-[13px] font-medium cursor-default" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span></td>
+                  <td className="px-3 py-3.5 text-right">
+                    <span className="text-text-secondary text-[12px] font-medium cursor-default" title={formatMinutesFull(p.avgSessionMin)}>
+                      {formatMinutes(p.avgSessionMin)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3.5 text-right">
+                    <span className="text-text-secondary text-[12px] font-medium cursor-default" title={formatMinutesFull(p.avgTotalPlaytimeMin)}>
+                      {formatMinutes(p.avgTotalPlaytimeMin)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3.5 text-right pr-6 sm:pr-7">
+                    {p.repeatSpenderRate !== null ? (
+                      <span className={`text-[12px] font-semibold cursor-default ${p.repeatSpenderRate >= 50 ? 'text-green-400' : p.repeatSpenderRate >= 25 ? 'text-yellow-400' : 'text-text-secondary'}`} title={`${p.repeatSpenderRate}% of buyers purchased again`}>
+                        {p.repeatSpenderRate}%
+                      </span>
+                    ) : (
+                      <span className="text-text-muted text-[12px]">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
