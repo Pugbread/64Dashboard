@@ -5,6 +5,7 @@ import { useMeta } from '../hooks/useMeta';
 import Dropdown from '../components/Dropdown';
 import LazyChart from '../components/LazyChart';
 import PlaytimeDistribution from '../components/PlaytimeDistribution';
+import RevenueComboChart from '../components/RevenueComboChart';
 import { Users } from 'lucide-react';
 
 const RANGE_OPTIONS = [
@@ -72,6 +73,10 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
   const providers: ProviderMeta[] = meta
     ? meta.providers.filter((p) => p.category === category)
     : [];
+  const isRevenueCategory = category === 'revenue';
+  const standardProviders = isRevenueCategory
+    ? providers.filter((p) => p.id !== 'revenue' && p.id !== 'purchases')
+    : providers;
 
   // Reset range and interval to correct defaults when switching categories
   useEffect(() => {
@@ -141,7 +146,14 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
       ) : (
         <>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {providers.map((p) => (
+            {isRevenueCategory && (
+              <RevenueComboChart
+                gameId={selectedGameId}
+                range={range}
+                interval={interval}
+              />
+            )}
+            {standardProviders.map((p) => (
               <LazyChart
                 key={`${p.id}-${range}-${interval}`}
                 gameId={selectedGameId}
