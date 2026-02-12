@@ -137,6 +137,7 @@ router.get('/:gameId/product-flows', async (req: Request, res: Response) => {
          FROM numbered
          WHERE rn <= 5
          GROUP BY player_id
+         HAVING COUNT(*) >= 2
        )
        SELECT chain_names, chain_ids, chain_types, COUNT(*)::int AS cnt
        FROM chains
