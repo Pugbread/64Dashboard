@@ -8,7 +8,7 @@ import {
 
 const router = Router();
 
-const VALID_RANGES: Range[] = ['1h', '6h', '24h', '3d', '7d', '30d'];
+const VALID_RANGES: Range[] = ['1h', '6h', '24h', '3d', '7d', '14d', '30d'];
 const VALID_INTERVALS: Interval[] = ['1m', '5m', '30m', '1h', '3h', '7h', '1d'];
 
 // GET /api/stats/meta — categories, providers, interval rules

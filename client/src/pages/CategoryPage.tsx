@@ -16,6 +16,13 @@ const RANGE_OPTIONS = [
   { value: '30d', label: '30 Days' },
 ];
 
+const RETENTION_RANGE_OPTIONS = [
+  { value: '3d', label: 'Past 3 Days' },
+  { value: '7d', label: 'Past 7 Days' },
+  { value: '14d', label: 'Past 14 Days' },
+  { value: '30d', label: 'Past 30 Days' },
+];
+
 const INTERVAL_OPTIONS: Record<string, string> = {
   '1m': '1 Minute', '5m': '5 Minutes', '30m': '30 Minutes',
   '1h': '1 Hour', '3h': '3 Hours', '7h': '7 Hours', '1d': '1 Day',
@@ -56,8 +63,8 @@ interface CategoryPageProps {
 }
 
 export default function CategoryPage({ category, selectedGameId }: CategoryPageProps) {
-  const [range, setRange] = useState<Range>('24h');
-  const [interval, setInterval] = useState<Interval>('1h');
+  const [range, setRange] = useState<Range>(category === 'retention' ? '7d' as Range : '24h');
+  const [interval, setInterval] = useState<Interval>(category === 'retention' ? '1d' as Interval : '1h');
   const { meta } = useMeta();
   const ccu = useCCU(category === 'engagement' ? selectedGameId : null);
 
@@ -67,11 +74,15 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
     : [];
 
   useEffect(() => {
+    if (category === 'retention') {
+      setInterval('1d' as Interval);
+      return;
+    }
     const available = getAvailableIntervals(range);
     if (!available.find((a) => a.value === interval)) {
       setInterval((DEFAULT_INTERVAL[range] || available[0]?.value || '1h') as Interval);
     }
-  }, [range]);
+  }, [range, category]);
 
   return (
     <div className="space-y-7">
@@ -82,8 +93,14 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
         </h1>
         <p className="text-text-secondary text-[13px] mt-1">Analytics overview</p>
         <div className="flex flex-wrap items-center gap-3 mt-4">
-          <Dropdown value={range} options={RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
-          <Dropdown value={interval} options={getAvailableIntervals(range)} onChange={(v) => setInterval(v as Interval)} />
+          {category === 'retention' ? (
+            <Dropdown value={range} options={RETENTION_RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
+          ) : (
+            <>
+              <Dropdown value={range} options={RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
+              <Dropdown value={interval} options={getAvailableIntervals(range)} onChange={(v) => setInterval(v as Interval)} />
+            </>
+          )}
         </div>
       </div>
 

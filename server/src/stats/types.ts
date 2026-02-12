@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 
 // ── Ranges ──────────────────────────────────────────────────
-export type Range = '1h' | '6h' | '24h' | '3d' | '7d' | '30d';
+export type Range = '1h' | '6h' | '24h' | '3d' | '7d' | '14d' | '30d';
 
 export const RANGE_MS: Record<Range, number> = {
   '1h':  60 * 60 * 1000,
@@ -9,6 +9,7 @@ export const RANGE_MS: Record<Range, number> = {
   '24h': 24 * 60 * 60 * 1000,
   '3d':  3 * 24 * 60 * 60 * 1000,
   '7d':  7 * 24 * 60 * 60 * 1000,
+  '14d': 14 * 24 * 60 * 60 * 1000,
   '30d': 30 * 24 * 60 * 60 * 1000,
 };
 
@@ -32,6 +33,7 @@ export const INTERVAL_AVAILABILITY: Record<Range, Interval[]> = {
   '24h': ['30m', '1h', '3h', '7h'],
   '3d':  ['30m', '1h', '3h', '7h', '1d'],
   '7d':  ['1h', '3h', '7h', '1d'],
+  '14d': ['3h', '7h', '1d'],
   '30d': ['3h', '7h', '1d'],
 };
 
@@ -42,6 +44,7 @@ export const DEFAULT_INTERVAL: Record<Range, Interval> = {
   '24h': '1h',
   '3d':  '3h',
   '7d':  '1d',
+  '14d': '1d',
   '30d': '1d',
 };
 
