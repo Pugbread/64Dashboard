@@ -50,3 +50,5 @@ export const getUsers = (gameId: string, page = 1, limit = 25, search = '', veri
   api.get(`/stats/${gameId}/users`, { params: { page, limit, search, verified, sort } });
 export const getPlaytimeDistribution = (gameId: string, range: string) =>
   api.get(`/stats/${gameId}/playtime-distribution`, { params: { range } });
+export const getProductFlows = (gameId: string, range: string) =>
+  api.get(`/stats/${gameId}/product-flows`, { params: { range } });

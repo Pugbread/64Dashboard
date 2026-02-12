@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
-import { ProductTowers, ProductTable, ProductSort, SortDir, getProductValue } from '../components/ProductBreakdown';
+import { useProductFlows } from '../hooks/useProductFlows';
+import { ProductTowers, ProductTable, ProductFlows, ProductSort, SortDir, getProductValue } from '../components/ProductBreakdown';
 import Dropdown from '../components/Dropdown';
 import { Package } from 'lucide-react';
 
@@ -23,6 +24,7 @@ export default function ProductsPage({ selectedGameId }: Props) {
   const [sortField, setSortField] = useState<ProductSort>('revenue');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const { data, loading } = useProductBreakdown(selectedGameId, range, page);
+  const { data: flowsData, loading: flowsLoading } = useProductFlows(selectedGameId, range);
 
   const handleSortChange = (field: ProductSort) => {
     if (field === sortField) {
@@ -93,6 +95,11 @@ export default function ProductsPage({ selectedGameId }: Props) {
       {hasData && (
         <div className="space-y-5">
           {sortedTower.length > 0 && <ProductTowers products={sortedTower} sortField={sortField} />}
+          <ProductFlows
+            flows={flowsData?.flows ?? []}
+            totalNewBuyers={flowsData?.totalNewBuyers ?? 0}
+            loading={flowsLoading}
+          />
           {data && data.products.length > 0 && (
             <ProductTable
               products={data.products}

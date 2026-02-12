@@ -95,6 +95,90 @@ router.get('/:gameId/recent-purchases', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/stats/:gameId/product-flows — top 5 purchase chains for new buyers
+router.get('/:gameId/product-flows', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const rangeRaw = String(req.query.range || '7d');
+    const range: Range = VALID_RANGES.includes(rangeRaw as Range) ? (rangeRaw as Range) : '7d';
+
+    const to = new Date();
+    const from = new Date(to.getTime() - RANGE_MS[range]);
+
+    // Verify game
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    // Find top 5 purchase chains for new buyers (first purchase in timeframe).
+    // 1) new_buyers: players whose MIN(created_at) falls within the timeframe
+    // 2) numbered: their purchases ordered chronologically, capped at 5
+    // 3) chains: aggregate into arrays per player
+    // 4) group identical chains, count, take top 5
+    const { rows } = await pool.query(
+      `WITH new_buyers AS (
+         SELECT player_id
+         FROM purchases
+         WHERE game_id = $1
+         GROUP BY player_id
+         HAVING MIN(created_at) >= $2 AND MIN(created_at) < $3
+       ),
+       numbered AS (
+         SELECT p.player_id, p.product_id, p.product_name, p.product_type,
+                ROW_NUMBER() OVER (PARTITION BY p.player_id ORDER BY p.created_at ASC) AS rn
+         FROM purchases p
+         INNER JOIN new_buyers nb ON nb.player_id = p.player_id
+         WHERE p.game_id = $1 AND p.created_at >= $2 AND p.created_at < $3
+       ),
+       chains AS (
+         SELECT player_id,
+                array_agg(product_name ORDER BY rn) AS chain_names,
+                array_agg(product_id ORDER BY rn) AS chain_ids,
+                array_agg(product_type ORDER BY rn) AS chain_types
+         FROM numbered
+         WHERE rn <= 5
+         GROUP BY player_id
+       )
+       SELECT chain_names, chain_ids, chain_types, COUNT(*)::int AS cnt
+       FROM chains
+       GROUP BY chain_names, chain_ids, chain_types
+       ORDER BY cnt DESC
+       LIMIT 5`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+
+    // Total new buyers for percentage calculation
+    const { rows: totalRows } = await pool.query(
+      `SELECT COUNT(DISTINCT player_id)::int AS total
+       FROM purchases
+       WHERE game_id = $1
+       GROUP BY player_id
+       HAVING MIN(created_at) >= $2 AND MIN(created_at) < $3`,
+      [gameId, from.toISOString(), to.toISOString()]
+    );
+    const totalNewBuyers = totalRows.length;
+
+    const flows = rows.map((r) => {
+      const names: string[] = r.chain_names;
+      const ids: string[] = r.chain_ids;
+      const types: string[] = r.chain_types;
+      return {
+        chain: names,
+        count: r.cnt,
+        products: names.map((name: string, i: number) => ({
+          productId: ids[i],
+          productName: name,
+          productType: types[i],
+        })),
+      };
+    });
+
+    res.json({ flows, totalNewBuyers, range, from: from.toISOString(), to: to.toISOString() });
+  } catch (error) {
+    console.error('Product flows error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/stats/:gameId/product-breakdown — revenue & sales per product (paginated)
 router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => {
   try {

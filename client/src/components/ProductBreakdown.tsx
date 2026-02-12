@@ -1,6 +1,7 @@
-import { Package, ShoppingBag, Trophy, ArrowUp, ArrowDown, ArrowUpDown, User, Crown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, ShoppingBag, Trophy, ArrowUp, ArrowDown, ArrowUpDown, User, Crown, ChevronLeft, ChevronRight, ArrowRight, GitBranch } from 'lucide-react';
 import { ProductEntry } from '../hooks/useProductBreakdown';
 import { SpenderEntry } from '../hooks/useTopSpenders';
+import { ProductFlow } from '../hooks/useProductFlows';
 
 export type ProductSort = 'revenue' | 'sales' | 'avgSession' | 'avgPlaytime' | 'repeat';
 export type SpenderSort = 'spent' | 'purchases';
@@ -404,6 +405,99 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
           </table>
         </div>
         <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Product Flows ─── */
+
+const FLOW_RANK_COLORS = [
+  'text-yellow-400',
+  'text-slate-300',
+  'text-amber-500',
+  'text-blue-400',
+  'text-blue-400/70',
+];
+
+export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: ProductFlow[]; totalNewBuyers: number; loading?: boolean }) {
+  if (loading) {
+    return (
+      <div className="card p-6 sm:p-7 animate-pulse">
+        <div className="relative z-10">
+          <div className="h-3 w-32 bg-white/5 rounded mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-white/[0.02] rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (flows.length === 0) return null;
+
+  return (
+    <div className="card p-6 sm:p-7">
+      <div className="relative z-10">
+        <div className="flex items-center gap-2.5 mb-1">
+          <GitBranch size={16} className="text-accent" />
+          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
+            Purchase Flows
+          </p>
+        </div>
+        <p className="text-text-muted text-[10px] mb-6">
+          Top {flows.length} most common purchase sequences for new buyers
+        </p>
+
+        <div className="space-y-2">
+          {flows.map((flow, idx) => {
+            const pct = totalNewBuyers > 0 ? Math.round((flow.count / totalNewBuyers) * 1000) / 10 : 0;
+            return (
+              <div
+                key={idx}
+                className="flex items-center gap-3 px-4 py-3 rounded-btn bg-white/[0.02] border border-border/50 hover:border-border transition-colors"
+              >
+                {/* Rank */}
+                <span className={`text-[13px] font-bold w-5 shrink-0 ${FLOW_RANK_COLORS[idx] || 'text-text-muted'}`}>
+                  {idx + 1}
+                </span>
+
+                {/* Chain */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
+                  {flow.products.map((product, pIdx) => (
+                    <div key={pIdx} className="flex items-center gap-1.5 shrink-0">
+                      {pIdx > 0 && (
+                        <ArrowRight size={12} className="text-text-muted/50 shrink-0" />
+                      )}
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-btn bg-bg-elevated border border-border/50">
+                        <div className="w-5 h-5 shrink-0 rounded-sm bg-bg-primary overflow-hidden border border-border/50">
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package size={10} className="text-text-muted" />
+                          </div>
+                        </div>
+                        <span className="text-white text-[11px] font-medium whitespace-nowrap">
+                          {product.productName}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Count + percentage */}
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-white text-[12px] font-semibold tabular-nums">
+                    {flow.count.toLocaleString()}
+                  </span>
+                  <span className="text-text-muted text-[10px] font-medium">
+                    ({pct}%)
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
