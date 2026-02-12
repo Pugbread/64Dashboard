@@ -8,6 +8,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { TimeSeriesResult, ProviderMeta, TimeSeriesPoint } from '../hooks/useStats';
+import { formatCurrency, useCurrencyMode } from '../lib/currency';
 
 interface TimeSeriesChartProps {
   provider: ProviderMeta;
@@ -45,30 +46,6 @@ function formatTooltipLabel(dateStr: string, interval: string): string {
     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-function formatValue(value: number, format?: string, unit?: string): string {
-  if (format === 'duration') {
-    if (value < 1) return `${Math.round(value * 60)}s`;
-    return `${value.toFixed(1)}m`;
-  }
-  if (format === 'currency') return `${unit || 'R$'} ${value.toLocaleString()}`;
-  if (format === 'percentage') return `${value.toFixed(1)}%`;
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-/** Full precision value — never abbreviated. Used for title/hover. */
-function formatValueFull(value: number, format?: string, unit?: string): string {
-  if (format === 'duration') {
-    const mins = Math.floor(value);
-    const secs = Math.round((value - mins) * 60);
-    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-  }
-  if (format === 'currency') return `${unit || 'R$'} ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-  if (format === 'percentage') return `${value.toFixed(2)}%`;
-  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
 /**
  * Build chart data with split solid/partial series.
  * - `solid`: value for complete data points (null for partial-only points)
@@ -102,8 +79,32 @@ function buildChartData(data: TimeSeriesPoint[]) {
 }
 
 export default function TimeSeriesChart({ provider, result, interval }: TimeSeriesChartProps) {
+  const { currencyMode } = useCurrencyMode();
   const color = CATEGORY_COLORS[provider.category] || '#3B82F6';
   const hasPartial = result.data.some((p) => p.partial);
+
+  const formatValue = (value: number, format?: string): string => {
+    if (format === 'duration') {
+      if (value < 1) return `${Math.round(value * 60)}s`;
+      return `${value.toFixed(1)}m`;
+    }
+    if (format === 'currency') return formatCurrency(value, currencyMode, false);
+    if (format === 'percentage') return `${value.toFixed(1)}%`;
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+    return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
+  const formatValueFull = (value: number, format?: string): string => {
+    if (format === 'duration') {
+      const mins = Math.floor(value);
+      const secs = Math.round((value - mins) * 60);
+      return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+    if (format === 'currency') return formatCurrency(value, currencyMode, true);
+    if (format === 'percentage') return `${value.toFixed(2)}%`;
+    return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
 
   if (result.data.length === 0) {
     return (
@@ -120,7 +121,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
 
   const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
   const total = result.data.reduce((sum, p) => sum + p.value, 0);
-  const displayValue = formatValue(avg, provider.format, provider.unit);
+  const displayValue = formatValue(avg, provider.format);
   const chartData = buildChartData(result.data);
 
   // Revenue gets both Total and Average in the headline
@@ -132,15 +133,15 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
         <p className="text-[12px] text-text-secondary font-medium mb-1">{provider.name}</p>
         {isRevenue ? (
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-6">
-            <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total: ${formatValueFull(total, provider.format, provider.unit)}`}>
-              Total: {formatValue(total, provider.format, provider.unit)}
+            <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total: ${formatValueFull(total, provider.format)}`}>
+              Total: {formatValue(total, provider.format)}
             </p>
-            <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none" title={`Average: ${formatValueFull(avg, provider.format, provider.unit)}`}>
-              Average: {formatValue(avg, provider.format, provider.unit)}
+            <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none" title={`Average: ${formatValueFull(avg, provider.format)}`}>
+              Average: {formatValue(avg, provider.format)}
             </p>
           </div>
         ) : (
-          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none mb-6" title={formatValueFull(avg, provider.format, provider.unit)}>
+          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none mb-6" title={formatValueFull(avg, provider.format)}>
             {displayValue}
           </p>
         )}
@@ -167,7 +168,16 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
-              <YAxis tick={{ fill: '#64748B', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fill: '#64748B', fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) =>
+                  provider.format === 'currency'
+                    ? formatCurrency(Number(v), currencyMode, false)
+                    : Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                }
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#121214',
@@ -183,7 +193,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   // On bridge point (both solid & partial exist), skip the duplicate partial entry
                   if (name === 'partial' && props?.payload?.solid != null) return [null, null];
                   const label = name === 'partial' ? `${provider.name} (accumulating)` : provider.name;
-                  return [formatValue(Number(value), provider.format, provider.unit), label];
+                  return [formatValue(Number(value), provider.format), label];
                 }}
                 labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
               />

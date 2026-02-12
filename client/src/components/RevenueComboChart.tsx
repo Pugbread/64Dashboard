@@ -13,6 +13,7 @@ import {
 import { getCategoryStats } from '../api/client';
 import { TimeSeriesPoint } from '../hooks/useStats';
 import { AlertTriangle } from 'lucide-react';
+import { formatCurrency, useCurrencyMode } from '../lib/currency';
 
 interface RevenueComboChartProps {
   gameId: string;
@@ -51,12 +52,6 @@ function formatTooltipLabel(dateStr: string, interval: string): string {
   );
 }
 
-function formatRobux(value: number): string {
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(1)}K`;
-  return `R$ ${value.toLocaleString()}`;
-}
-
 function buildUnifiedData(revenue: TimeSeriesPoint[], purchases: TimeSeriesPoint[]) {
   const map = new Map<string, { date: string; revenue: number; purchases: number }>();
 
@@ -80,6 +75,7 @@ function buildUnifiedData(revenue: TimeSeriesPoint[], purchases: TimeSeriesPoint
 }
 
 export default function RevenueComboChart({ gameId, range, interval }: RevenueComboChartProps) {
+  const { currencyMode } = useCurrencyMode();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revenue, setRevenue] = useState<TimeSeriesPoint[]>([]);
@@ -157,8 +153,8 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
       <div className="relative z-10">
         <p className="text-[12px] text-text-secondary font-medium mb-1">Revenue & Purchases</p>
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 mb-6">
-          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total revenue: R$ ${totalRevenue.toLocaleString()}`}>
-            {formatRobux(totalRevenue)}
+          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total revenue: ${formatCurrency(totalRevenue, currencyMode, true)}`}>
+            {formatCurrency(totalRevenue, currencyMode, false)}
           </p>
           <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none" title={`Total purchases: ${totalPurchases.toLocaleString()}`}>
             {totalPurchases.toLocaleString()} purchases
@@ -190,7 +186,7 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                 tick={{ fill: '#64748B', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(v) => (Number(v) >= 1000 ? `${Math.round(Number(v) / 1000)}k` : `${v}`)}
+                tickFormatter={(v) => formatCurrency(Number(v), currencyMode, false)}
               />
               <YAxis
                 yAxisId="purchases"
@@ -210,7 +206,7 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                   padding: '10px 14px',
                 }}
                 formatter={(value: any, name: string) => {
-                  if (name === 'Revenue') return [formatRobux(Number(value)), name];
+                  if (name === 'Revenue') return [formatCurrency(Number(value), currencyMode, false), name];
                   return [Number(value).toLocaleString(), name];
                 }}
                 labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
@@ -226,7 +222,12 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                 strokeWidth={2}
                 fill="url(#rev-fill)"
                 dot={false}
-                activeDot={{ r: 4, fill: '#4ADE80', stroke: '#080808', strokeWidth: 2 }}
+                activeDot={{
+                  r: 4,
+                  fill: '#4ADE80',
+                  stroke: '#080808',
+                  strokeWidth: 2,
+                }}
               />
               <Line
                 yAxisId="purchases"

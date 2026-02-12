@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Radio, Volume2, VolumeX, Package, User } from 'lucide-react';
+import { formatCurrency, useCurrencyMode } from '../lib/currency';
 
 interface Props {
   selectedGameId: string | null;
@@ -76,10 +77,6 @@ function playChaChing() {
 }
 
 /* ── Formatting ── */
-function formatRobux(value: number): string {
-  return `R$ ${value.toLocaleString()}`;
-}
-
 function timeAgo(ts: string): string {
   const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
   if (diff < 5) return 'just now';
@@ -91,6 +88,7 @@ function timeAgo(ts: string): string {
 let uidCounter = 0;
 
 export default function LivePurchasesPage({ selectedGameId }: Props) {
+  const { currencyMode } = useCurrencyMode();
   const [purchases, setPurchases] = useState<LivePurchase[]>([]);
   const [connected, setConnected] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
@@ -386,7 +384,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
           ) : (
             <div className="divide-y divide-border/50">
               {filteredPurchases.map((p) => (
-                <PurchaseRow key={p.uid} purchase={p} />
+                <PurchaseRow key={p.uid} purchase={p} currencyMode={currencyMode} />
               ))}
             </div>
           )}
@@ -397,7 +395,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
 }
 
 /* ── Purchase Row ── */
-function PurchaseRow({ purchase: p }: { purchase: LivePurchase }) {
+function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; currencyMode: 'robux' | 'usd' }) {
   return (
     <div
       className={`
@@ -452,7 +450,7 @@ function PurchaseRow({ purchase: p }: { purchase: LivePurchase }) {
 
         {/* Price */}
         <p className="text-white text-[14px] font-semibold text-right tabular-nums">
-          {formatRobux(p.priceRobux)}
+          {formatCurrency(p.priceRobux, currencyMode)}
         </p>
 
         {/* Time */}
@@ -476,7 +474,7 @@ function PurchaseRow({ purchase: p }: { purchase: LivePurchase }) {
               {p.displayName || p.playerId}
             </p>
             <p className="text-white text-[13px] font-semibold whitespace-nowrap tabular-nums">
-              {formatRobux(p.priceRobux)}
+              {formatCurrency(p.priceRobux, currencyMode)}
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 mt-0.5">

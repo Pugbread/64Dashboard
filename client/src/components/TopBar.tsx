@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useCurrencyMode } from '../lib/currency';
 
 function getTimeUntilMidnight(): string {
   const now = new Date();
@@ -22,6 +23,7 @@ function getCurrentUTC(): string {
 export default function TopBar() {
   const [countdown, setCountdown] = useState(getTimeUntilMidnight());
   const [utcTime, setUtcTime] = useState(getCurrentUTC());
+  const { currencyMode, setCurrencyMode } = useCurrencyMode();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -34,6 +36,27 @@ export default function TopBar() {
   return (
     <div className="hidden lg:flex items-center justify-end px-8 py-3.5 border-b border-border/70 bg-bg-primary/75 backdrop-blur-md sticky top-0 z-30">
       <div className="flex items-center gap-5 bg-bg-card/70 border border-border/80 rounded-card px-4 py-2.5 shadow-card">
+        <div className="flex items-center gap-1 rounded-btn bg-bg-elevated border border-border p-0.5">
+          <button
+            onClick={() => setCurrencyMode('robux')}
+            className={`px-2 py-1 text-[10px] font-semibold rounded-btn transition-colors ${
+              currencyMode === 'robux' ? 'bg-accent text-black' : 'text-text-secondary hover:text-white'
+            }`}
+          >
+            R$
+          </button>
+          <button
+            onClick={() => setCurrencyMode('usd')}
+            className={`px-2 py-1 text-[10px] font-semibold rounded-btn transition-colors ${
+              currencyMode === 'usd' ? 'bg-accent text-black' : 'text-text-secondary hover:text-white'
+            }`}
+          >
+            $
+          </button>
+        </div>
+
+        <div className="w-px h-4 bg-border/80" />
+
         {/* Current UTC time */}
         <div className="flex items-center gap-2">
           <span className="text-text-muted text-[10px] font-medium uppercase tracking-wider">UTC</span>

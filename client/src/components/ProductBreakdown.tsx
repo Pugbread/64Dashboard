@@ -2,19 +2,18 @@ import { Package, ShoppingBag, Trophy, ArrowUp, ArrowDown, ArrowUpDown, User, Cr
 import { ProductEntry } from '../hooks/useProductBreakdown';
 import { SpenderEntry } from '../hooks/useTopSpenders';
 import { ProductFlow } from '../hooks/useProductFlows';
+import { CurrencyMode, formatCurrency, useCurrencyMode } from '../lib/currency';
 
 export type ProductSort = 'revenue' | 'sales' | 'avgSession' | 'avgPlaytime' | 'repeat';
 export type SpenderSort = 'spent' | 'purchases';
 export type SortDir = 'desc' | 'asc';
 
-export function formatRobux(value: number): string {
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(1)}K`;
-  return `R$ ${value.toLocaleString()}`;
+export function formatRobux(value: number, currencyMode: CurrencyMode = 'robux'): string {
+  return formatCurrency(value, currencyMode, false);
 }
 
-export function formatRobuxFull(value: number): string {
-  return `R$ ${value.toLocaleString()}`;
+export function formatRobuxFull(value: number, currencyMode: CurrencyMode = 'robux'): string {
+  return formatCurrency(value, currencyMode, true);
 }
 
 const TOWER_GRADIENTS = [
@@ -65,17 +64,18 @@ export function getProductValue(p: ProductEntry, field: ProductSort): number {
   }
 }
 
-function formatProductValue(val: number, field: ProductSort): string {
+function formatProductValue(val: number, field: ProductSort, currencyMode: CurrencyMode): string {
   switch (field) {
     case 'sales': return val.toLocaleString();
     case 'avgSession': return `${val.toFixed(1)}m`;
     case 'avgPlaytime': return `${val.toFixed(1)}m`;
     case 'repeat': return `${val}%`;
-    default: return formatRobux(val);
+    default: return formatRobux(val, currencyMode);
   }
 }
 
 export function ProductTowers({ products, sortField }: { products: ProductEntry[]; sortField: ProductSort }) {
+  const { currencyMode } = useCurrencyMode();
   const top = products.slice(0, 10);
   if (top.length === 0) return null;
 
@@ -103,7 +103,7 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
               return (
                 <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
                   <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
-                    {formatProductValue(val, sortField)}
+                    {formatProductValue(val, sortField, currencyMode)}
                   </p>
                   <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
                     {product.iconUrl ? (
@@ -143,6 +143,7 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
 /* ─── Spender towers ─── */
 
 export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[]; sortField: SpenderSort }) {
+  const { currencyMode } = useCurrencyMode();
   const top = spenders.slice(0, 10);
   if (top.length === 0) return null;
 
@@ -170,7 +171,7 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
               return (
                 <div key={spender.playerId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
                   <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
-                    {sortField === 'spent' ? formatRobux(val) : val.toLocaleString()}
+                    {sortField === 'spent' ? formatRobux(val, currencyMode) : val.toLocaleString()}
                   </p>
                   <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
                     {spender.avatarUrl ? (
@@ -251,6 +252,7 @@ function formatMinutesFull(mins: number | null): string {
 }
 
 export function ProductTable({ products, sortField, sortDir, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; sortDir: SortDir; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
+  const { currencyMode } = useCurrencyMode();
   if (products.length === 0) return null;
   const sorted = [...products].sort((a, b) => {
     const diff = getProductValue(b, sortField) - getProductValue(a, sortField);
@@ -311,7 +313,7 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
                       {p.productType === 'gamepass' ? 'Gamepass' : 'DevProduct'}
                     </span>
                   </td>
-                  <td className="px-3 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(p.revenue)}>{formatRobux(p.revenue)}</span></td>
+                  <td className="px-3 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(p.revenue, currencyMode)}>{formatRobux(p.revenue, currencyMode)}</span></td>
                   <td className="px-3 py-3.5 text-right"><span className="text-text-secondary text-[13px] font-medium cursor-default" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span></td>
                   <td className="px-3 py-3.5 text-right">
                     <span className="text-text-secondary text-[12px] font-medium cursor-default" title={formatMinutesFull(p.avgSessionMin)}>
@@ -346,6 +348,7 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
 /* ─── Spender table ─── */
 
 export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page, totalPages, onPageChange }: { spenders: SpenderEntry[]; sortField: SpenderSort; sortDir: SortDir; onSortChange: (f: SpenderSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
+  const { currencyMode } = useCurrencyMode();
   if (spenders.length === 0) return null;
   const sorted = [...spenders].sort((a, b) => {
     const diff = (sortField === 'spent' ? b.spent - a.spent : b.purchases - a.purchases);
@@ -397,7 +400,7 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
                       <span className="text-white text-[13px] font-medium truncate">{s.displayName}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(s.spent)}>{formatRobux(s.spent)}</span></td>
+                  <td className="px-4 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(s.spent, currencyMode)}>{formatRobux(s.spent, currencyMode)}</span></td>
                   <td className="px-4 py-3.5 text-right pr-6 sm:pr-7"><span className="text-text-secondary text-[13px] font-medium cursor-default" title={s.purchases.toLocaleString()}>{s.purchases.toLocaleString()}</span></td>
                 </tr>
               ))}
