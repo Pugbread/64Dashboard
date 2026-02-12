@@ -31,15 +31,18 @@ export function useUsers(
 ) {
   const [data, setData] = useState<UsersResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch_ = useCallback(async () => {
     if (!gameId) return;
     try {
       setLoading(true);
+      setError(null);
       const { data: resp } = await getUsers(gameId, page, 25, search, verified, sort);
       setData(resp);
-    } catch {
+    } catch (err: any) {
       setData(null);
+      setError(err?.message || 'Failed to fetch users');
     } finally {
       setLoading(false);
     }
@@ -47,5 +50,5 @@ export function useUsers(
 
   useEffect(() => { fetch_(); }, [fetch_]);
 
-  return { data, loading };
+  return { data, loading, error };
 }

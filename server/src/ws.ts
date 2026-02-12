@@ -33,13 +33,33 @@ export function setupWebSocket(server: http.Server) {
       return;
     }
 
+    // Track liveness via pong responses
+    (ws as any).isAlive = true;
+    ws.on('pong', () => { (ws as any).isAlive = true; });
+
     // Keepalive pings every 30s
-    const interval = setInterval(() => {
+    const pingInterval = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) ws.ping();
     }, 30000);
 
-    ws.on('close', () => clearInterval(interval));
+    const cleanup = () => clearInterval(pingInterval);
+    ws.on('close', cleanup);
+    ws.on('error', cleanup);
   });
+
+  // Reap dead connections every 30s
+  const reaperInterval = setInterval(() => {
+    if (!wss) return;
+    for (const ws of wss.clients) {
+      if ((ws as any).isAlive === false) {
+        ws.terminate();
+        continue;
+      }
+      (ws as any).isAlive = false;
+    }
+  }, 30000);
+
+  wss.on('close', () => clearInterval(reaperInterval));
 
   console.log('WebSocket server ready on /ws');
 }

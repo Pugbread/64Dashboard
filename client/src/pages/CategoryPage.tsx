@@ -66,7 +66,7 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
   const [range, setRange] = useState<Range>(category === 'retention' ? '7d' as Range : '24h');
   const [interval, setInterval] = useState<Interval>(category === 'retention' ? '1d' as Interval : '1h');
   const { meta } = useMeta();
-  const ccu = useCCU(category === 'engagement' ? selectedGameId : null);
+  const { ccu } = useCCU(category === 'engagement' ? selectedGameId : null);
 
   // Get providers for this category from meta
   const providers: ProviderMeta[] = meta
@@ -82,7 +82,7 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
     if (!available.find((a) => a.value === interval)) {
       setInterval((DEFAULT_INTERVAL[range] || available[0]?.value || '1h') as Interval);
     }
-  }, [range, category]);
+  }, [range, category, interval]);
 
   return (
     <div className="space-y-7">

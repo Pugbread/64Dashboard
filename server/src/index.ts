@@ -26,7 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/games', adminAuth, gamesRoutes);
 app.use('/api/events', apiKeyAuth, eventsRoutes);
 app.use('/api/stats', adminAuth, statsRoutes);
-app.use('/api/proxy', proxyRoutes);
+app.use('/api/proxy', adminAuth, proxyRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

@@ -32,4 +32,8 @@ COPY --from=client-build /app/server/dist/client ./dist/client
 
 EXPOSE 3000
 ENV NODE_ENV=production
+
+# Run as non-root user for security
+USER node
+
 CMD ["node", "dist/index.js"]

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
@@ -17,17 +17,17 @@ export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const navigate = useNavigate();
 
-  const handleLogin = (newToken: string) => {
+  const handleLogin = useCallback((newToken: string) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     navigate('/');
-  };
+  }, [navigate]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
     navigate('/login');
-  };
+  }, [navigate]);
 
   useEffect(() => {
     if (token) {
@@ -38,7 +38,7 @@ export default function App() {
         handleLogout();
       }
     }
-  }, []);
+  }, [token, handleLogout]);
 
   // Not authenticated
   if (!token) {
@@ -68,10 +68,10 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   }, [location.pathname]);
 
   // Persist selected game to localStorage
-  const handleSelectGame = (id: string) => {
+  const handleSelectGame = useCallback((id: string) => {
     setSelectedGameId(id);
     localStorage.setItem('selectedGameId', id);
-  };
+  }, []);
 
   // Auto-select first game if nothing saved or saved game no longer exists
   useEffect(() => {
@@ -79,7 +79,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
     const savedId = selectedGameId;
     if (savedId && games.find((g) => g.id === savedId)) return;
     handleSelectGame(games[0].id);
-  }, [games]);
+  }, [games, selectedGameId, handleSelectGame]);
 
   if (metaLoading || !meta) {
     return (

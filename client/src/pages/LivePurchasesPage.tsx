@@ -369,7 +369,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
       <div className="card overflow-hidden">
         <div className="relative z-10">
           {/* Table header */}
-          <div className="hidden sm:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 px-6 sm:px-7 py-3 border-b border-border">
+          <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 px-6 md:px-7 py-3 border-b border-border">
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider" />
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Player</span>
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Product</span>
@@ -407,7 +407,7 @@ function PurchaseRow({ purchase: p }: { purchase: LivePurchase }) {
       `}
     >
       {/* Desktop layout */}
-      <div className="hidden sm:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 items-center">
+      <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 items-center">
         {/* Player avatar */}
         <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden border border-border shrink-0">
           {p.avatarUrl ? (
@@ -460,7 +460,7 @@ function PurchaseRow({ purchase: p }: { purchase: LivePurchase }) {
       </div>
 
       {/* Mobile layout */}
-      <div className="sm:hidden flex items-center gap-3">
+      <div className="md:hidden flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden border border-border shrink-0">
           {p.avatarUrl ? (
             <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />

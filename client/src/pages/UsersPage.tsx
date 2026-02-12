@@ -165,10 +165,10 @@ export default function UsersPage({ selectedGameId }: Props) {
                       <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right">
                         <span className="inline-flex items-center gap-1"><Clock size={10} /> Playtime</span>
                       </th>
-                      <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right">
+                      <th className="hidden sm:table-cell px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right">
                         <span className="inline-flex items-center gap-1"><LogIn size={10} /> Joins</span>
                       </th>
-                      <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right pr-6 sm:pr-7">Last Seen</th>
+                      <th className="hidden sm:table-cell px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right pr-6 sm:pr-7">Last Seen</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -202,10 +202,10 @@ export default function UsersPage({ selectedGameId }: Props) {
                             {formatPlaytime(u.playtimeSeconds)}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right">
+                        <td className="hidden sm:table-cell px-4 py-3.5 text-right">
                           <span className="text-text-secondary text-[13px] font-medium">{u.joins.toLocaleString()}</span>
                         </td>
-                        <td className="px-4 py-3.5 text-right pr-6 sm:pr-7">
+                        <td className="hidden sm:table-cell px-4 py-3.5 text-right pr-6 sm:pr-7">
                           <span className="text-text-muted text-[12px]" title={new Date(u.lastSeen).toLocaleString()}>
                             {formatLastSeen(u.lastSeen)}
                           </span>

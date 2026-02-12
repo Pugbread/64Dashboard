@@ -94,43 +94,45 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
           By {SORT_LABELS[sortField] || 'revenue'}
         </p>
 
-        <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1">
-          {top.map((product, i) => {
-            const val = getValue(product);
-            const heightPct = Math.max((val / maxVal) * 100, 8);
-            return (
-              <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
-                <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
-                  {formatProductValue(val, sortField)}
-                </p>
-                <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
-                  {product.iconUrl ? (
-                    <img src={product.iconUrl} alt={product.productName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center"><Package size={10} className="text-text-muted" /></div>
-                  )}
+        <div className="overflow-x-auto -mx-6 sm:-mx-7 px-6 sm:px-7">
+          <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1 min-w-[300px]">
+            {top.map((product, i) => {
+              const val = getValue(product);
+              const heightPct = Math.max((val / maxVal) * 100, 8);
+              return (
+                <div key={product.productId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
+                  <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
+                    {formatProductValue(val, sortField)}
+                  </p>
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
+                    {product.iconUrl ? (
+                      <img src={product.iconUrl} alt={product.productName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><Package size={10} className="text-text-muted" /></div>
+                    )}
+                  </div>
+                  <div
+                    className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                    style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
+                  >
+                    {i < 5 && (
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                        <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div
-                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
-                  style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
-                >
-                  {i < 5 && (
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                      <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        <div className="flex justify-center gap-1 sm:gap-2 mt-2 px-1">
-          {top.map((product) => (
-            <div key={product.productId} className="flex-1 max-w-[60px] text-center">
-              <p className="text-text-secondary text-[8px] sm:text-[9px] font-medium truncate">{product.productName}</p>
-            </div>
-          ))}
+          <div className="flex justify-center gap-1 sm:gap-2 mt-2 px-1 min-w-[300px]">
+            {top.map((product) => (
+              <div key={product.productId} className="flex-1 max-w-[60px] text-center">
+                <p className="text-text-secondary text-[8px] sm:text-[9px] font-medium truncate">{product.productName}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -159,43 +161,45 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
           By {sortField === 'spent' ? 'robux spent' : 'purchase count'}
         </p>
 
-        <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1">
-          {top.map((spender, i) => {
-            const val = getValue(spender);
-            const heightPct = Math.max((val / maxVal) * 100, 8);
-            return (
-              <div key={spender.playerId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
-                <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
-                  {sortField === 'spent' ? formatRobux(val) : val.toLocaleString()}
-                </p>
-                <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
-                  {spender.avatarUrl ? (
-                    <img src={spender.avatarUrl} alt={spender.displayName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center"><User size={10} className="text-text-muted" /></div>
-                  )}
+        <div className="overflow-x-auto -mx-6 sm:-mx-7 px-6 sm:px-7">
+          <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1 min-w-[300px]">
+            {top.map((spender, i) => {
+              const val = getValue(spender);
+              const heightPct = Math.max((val / maxVal) * 100, 8);
+              return (
+                <div key={spender.playerId} className="flex flex-col items-center flex-1 max-w-[60px] h-full justify-end">
+                  <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
+                    {sortField === 'spent' ? formatRobux(val) : val.toLocaleString()}
+                  </p>
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
+                    {spender.avatarUrl ? (
+                      <img src={spender.avatarUrl} alt={spender.displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><User size={10} className="text-text-muted" /></div>
+                    )}
+                  </div>
+                  <div
+                    className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                    style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
+                  >
+                    {i < 5 && (
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                        <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div
-                  className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
-                  style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
-                >
-                  {i < 5 && (
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                      <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        <div className="flex justify-center gap-1 sm:gap-2 mt-2 px-1">
-          {top.map((spender) => (
-            <div key={spender.playerId} className="flex-1 max-w-[60px] text-center">
-              <p className="text-text-secondary text-[8px] sm:text-[9px] font-medium truncate">{spender.displayName}</p>
-            </div>
-          ))}
+          <div className="flex justify-center gap-1 sm:gap-2 mt-2 px-1 min-w-[300px]">
+            {top.map((spender) => (
+              <div key={spender.playerId} className="flex-1 max-w-[60px] text-center">
+                <p className="text-text-secondary text-[8px] sm:text-[9px] font-medium truncate">{spender.displayName}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

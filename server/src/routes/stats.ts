@@ -540,8 +540,10 @@ router.get('/:gameId/users', async (req: Request, res: Response) => {
     let paramIdx = 2;
 
     if (search) {
-      conditions.push(`(pc.display_name ILIKE $${paramIdx} OR pc.username ILIKE $${paramIdx} OR s.player_id = $${paramIdx + 1})`);
-      params.push(`%${search}%`, search);
+      // Escape ILIKE special characters to prevent wildcard injection
+      const escapedSearch = search.replace(/[%_\\]/g, '\\$&');
+      conditions.push(`(pc.display_name ILIKE $${paramIdx} ESCAPE '\\' OR pc.username ILIKE $${paramIdx} ESCAPE '\\' OR s.player_id = $${paramIdx + 1})`);
+      params.push(`%${escapedSearch}%`, search);
       paramIdx += 2;
     }
     if (verifiedOnly) {

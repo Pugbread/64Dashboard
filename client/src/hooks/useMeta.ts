@@ -13,13 +13,14 @@ export interface MetaResponse {
 export function useMeta() {
   const [meta, setMeta] = useState<MetaResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getStatsMeta()
-      .then(({ data }) => setMeta(data))
-      .catch(console.error)
+      .then(({ data }) => { setMeta(data); setError(null); })
+      .catch((err) => { setError(err?.message || 'Failed to fetch metadata'); console.error(err); })
       .finally(() => setLoading(false));
   }, []);
 
-  return { meta, loading };
+  return { meta, loading, error };
 }

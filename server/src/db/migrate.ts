@@ -64,11 +64,8 @@ const migrations = [
   {
     name: '003_add_indexes',
     sql: `
-      CREATE INDEX IF NOT EXISTS idx_sessions_game_started ON sessions(game_id, started_at);
       CREATE INDEX IF NOT EXISTS idx_sessions_game_ended ON sessions(game_id, ended_at);
       CREATE INDEX IF NOT EXISTS idx_sessions_game_open ON sessions(game_id) WHERE ended_at IS NULL;
-      CREATE INDEX IF NOT EXISTS idx_purchases_game_created ON purchases(game_id, created_at);
-      CREATE INDEX IF NOT EXISTS idx_custom_events_game_created ON custom_events(game_id, created_at);
     `,
   },
   {
@@ -84,6 +81,13 @@ const migrations = [
       );
       CREATE INDEX IF NOT EXISTS idx_player_cache_display ON player_cache(display_name);
       CREATE INDEX IF NOT EXISTS idx_player_cache_verified ON player_cache(has_verified_badge);
+    `,
+  },
+  {
+    name: '005_add_player_indexes',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_purchases_player_created ON purchases(player_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_player_started ON sessions(player_id, started_at);
     `,
   },
 ];

@@ -46,11 +46,11 @@ router.get('/game-info/:universeId', async (req: Request, res: Response) => {
         favoritedCount: game.favoritedCount,
       });
     } else {
-      res.json(null);
+      res.json({ error: 'Game not found' });
     }
   } catch (error) {
     console.error('Error proxying game info:', error);
-    res.json(null);
+    res.json({ error: 'Failed to fetch game info' });
   }
 });
 
@@ -65,11 +65,15 @@ router.get('/product-icons', async (req: Request, res: Response) => {
       return;
     }
 
+    // Cap at 100 IDs to prevent abuse
+    const idList = ids.split(',').slice(0, 100);
+    const sanitizedIds = idList.join(',');
+
     let apiUrl: string;
     if (productType === 'gamepass') {
-      apiUrl = `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${ids}&size=150x150&format=Png&isCircular=false`;
+      apiUrl = `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${sanitizedIds}&size=150x150&format=Png&isCircular=false`;
     } else {
-      apiUrl = `https://thumbnails.roblox.com/v1/developer-products/icons?developerProductIds=${ids}&size=150x150&format=Png&isCircular=false`;
+      apiUrl = `https://thumbnails.roblox.com/v1/developer-products/icons?developerProductIds=${sanitizedIds}&size=150x150&format=Png&isCircular=false`;
     }
 
     const response = await fetch(apiUrl);
