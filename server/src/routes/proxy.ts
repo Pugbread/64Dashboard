@@ -2,6 +2,46 @@ import { Router, Request, Response } from 'express';
 
 const router = Router();
 
+function getRobloxAuthHeaders(): Record<string, string> {
+  const cookie = process.env.ROBLOX_COOKIE || process.env.ROBLOSECURITY || '';
+  if (!cookie) return {};
+  const value = cookie.includes('.ROBLOSECURITY=') ? cookie : `.ROBLOSECURITY=${cookie}`;
+  return { Cookie: value };
+}
+
+async function fetchDevProductMeta(productId: string): Promise<{ name: string | null; iconAssetId: string | null }> {
+  const authHeaders = getRobloxAuthHeaders();
+
+  try {
+    const cloudResp = await fetch(
+      `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`,
+      { headers: authHeaders }
+    );
+    if (cloudResp.ok) {
+      const cloud: any = await cloudResp.json();
+      const rawAssetId =
+        cloud?.iconImageAssetId ?? cloud?.IconImageAssetId ?? cloud?.iconAssetId ?? cloud?.imageAssetId;
+      const iconAssetId = rawAssetId ? String(rawAssetId) : null;
+      const name = cloud?.name ?? cloud?.Name ?? cloud?.displayName ?? null;
+      if (iconAssetId || name) return { name, iconAssetId };
+    }
+  } catch { /* fallback below */ }
+
+  try {
+    const legacyResp = await fetch(`https://economy.roblox.com/v2/developer-products/${productId}/info`);
+    if (legacyResp.ok) {
+      const legacy: any = await legacyResp.json();
+      const rawAssetId =
+        legacy?.IconImageAssetId ?? legacy?.iconImageAssetId ?? legacy?.IconImageAssetID;
+      const iconAssetId = rawAssetId ? String(rawAssetId) : null;
+      const name = legacy?.Name ?? legacy?.name ?? null;
+      return { name, iconAssetId };
+    }
+  } catch { /* ignore */ }
+
+  return { name: null, iconAssetId: null };
+}
+
 // GET /api/proxy/game-icon/:universeId - Proxy Roblox game icon
 router.get('/game-icon/:universeId', async (req: Request, res: Response) => {
   try {
@@ -91,11 +131,13 @@ router.get('/product-icons', async (req: Request, res: Response) => {
 
     if (universeId) {
       try {
+        const authHeaders = getRobloxAuthHeaders();
         let pageNumber = 1;
         let done = false;
         while (!done && pageNumber <= 10) {
           const listResp = await fetch(
-            `https://apis.roblox.com/developer-products/v1/universes/${universeId}/developerproducts?pageNumber=${pageNumber}&pageSize=50`
+            `https://apis.roblox.com/developer-products/v1/universes/${universeId}/developerproducts?pageNumber=${pageNumber}&pageSize=50`,
+            { headers: authHeaders }
           );
           const listData: any = await listResp.json();
           const pageItems = Array.isArray(listData?.developerProducts)
@@ -126,14 +168,8 @@ router.get('/product-icons', async (req: Request, res: Response) => {
     const unresolved = productIds.filter((productId) => !assetByProductId[productId]);
     await Promise.all(unresolved.map(async (productId) => {
       try {
-        const infoResp = await fetch(
-          `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`
-        );
-        const info: any = await infoResp.json();
-        const rawAssetId =
-          info?.iconImageAssetId ?? info?.IconImageAssetId ?? info?.iconAssetId ?? info?.imageAssetId;
-        const assetId = rawAssetId ? String(rawAssetId) : '';
-        if (assetId) assetByProductId[productId] = assetId;
+        const meta = await fetchDevProductMeta(productId);
+        if (meta.iconAssetId) assetByProductId[productId] = meta.iconAssetId;
       } catch { /* ignore per-product errors */ }
     }));
 
@@ -204,12 +240,14 @@ router.get('/product-name/:productId', async (req: Request, res: Response) => {
     if (type === 'gamepass') {
       url = `https://economy.roblox.com/v1/game-pass/${productId}/game-pass-product-info`;
     } else {
-      url = `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`;
+      const meta = await fetchDevProductMeta(productId);
+      res.json({ name: meta.name });
+      return;
     }
 
     const response = await fetch(url);
     const data: any = await response.json();
-    res.json({ name: data.Name || data.name || data.displayName || null });
+    res.json({ name: data.Name || data.name || null });
   } catch {
     res.json({ name: null });
   }

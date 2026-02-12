@@ -11,6 +11,42 @@ const router = Router();
 const VALID_RANGES: Range[] = ['1h', '6h', '24h', '3d', '7d', '14d', '30d'];
 const VALID_INTERVALS: Interval[] = ['1m', '5m', '30m', '1h', '3h', '7h', '1d'];
 
+function getRobloxAuthHeaders(): Record<string, string> {
+  const cookie = process.env.ROBLOX_COOKIE || process.env.ROBLOSECURITY || '';
+  if (!cookie) return {};
+  const value = cookie.includes('.ROBLOSECURITY=') ? cookie : `.ROBLOSECURITY=${cookie}`;
+  return { Cookie: value };
+}
+
+async function fetchDevProductIconAssetId(productId: string): Promise<string | null> {
+  const authHeaders = getRobloxAuthHeaders();
+
+  try {
+    const cloudResp = await fetch(
+      `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`,
+      { headers: authHeaders }
+    );
+    if (cloudResp.ok) {
+      const cloud: any = await cloudResp.json();
+      const rawAssetId =
+        cloud?.iconImageAssetId ?? cloud?.IconImageAssetId ?? cloud?.iconAssetId ?? cloud?.imageAssetId;
+      if (rawAssetId) return String(rawAssetId);
+    }
+  } catch { /* fallback below */ }
+
+  try {
+    const legacyResp = await fetch(`https://economy.roblox.com/v2/developer-products/${productId}/info`);
+    if (legacyResp.ok) {
+      const legacy: any = await legacyResp.json();
+      const rawAssetId =
+        legacy?.IconImageAssetId ?? legacy?.iconImageAssetId ?? legacy?.IconImageAssetID;
+      if (rawAssetId) return String(rawAssetId);
+    }
+  } catch { /* ignore */ }
+
+  return null;
+}
+
 // GET /api/stats/meta — categories, providers, interval rules
 router.get('/meta', (_req: Request, res: Response) => {
   res.json({
@@ -247,11 +283,13 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
         // Prefer universe listing API for batch resolution.
         if (universeId) {
           try {
+            const authHeaders = getRobloxAuthHeaders();
             let pageNumber = 1;
             let done = false;
             while (!done && pageNumber <= 10) {
               const listResp = await fetch(
-                `https://apis.roblox.com/developer-products/v1/universes/${universeId}/developerproducts?pageNumber=${pageNumber}&pageSize=50`
+                `https://apis.roblox.com/developer-products/v1/universes/${universeId}/developerproducts?pageNumber=${pageNumber}&pageSize=50`,
+                { headers: authHeaders }
               );
               const listData: any = await listResp.json();
               const pageItems = Array.isArray(listData?.developerProducts)
@@ -285,13 +323,7 @@ router.get('/:gameId/product-breakdown', async (req: Request, res: Response) => 
         const unresolved = ids.filter((productId) => !assetByProductId[productId]);
         await Promise.all(unresolved.map(async (productId) => {
           try {
-            const infoResp = await fetch(
-              `https://apis.roblox.com/developer-products/v1/developer-products/${productId}`
-            );
-            const info: any = await infoResp.json();
-            const rawAssetId =
-              info?.iconImageAssetId ?? info?.IconImageAssetId ?? info?.iconAssetId ?? info?.imageAssetId;
-            const assetId = rawAssetId ? String(rawAssetId) : '';
+            const assetId = await fetchDevProductIconAssetId(productId);
             if (assetId) assetByProductId[productId] = assetId;
           } catch { /* ignore per-product errors */ }
         }));
