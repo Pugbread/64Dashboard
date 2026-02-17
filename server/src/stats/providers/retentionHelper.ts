@@ -115,14 +115,17 @@ async function queryAccumulationCurve(
   }));
 
   // Estimate where retention may end by end-of-day (blue projection).
+  // Uses sqrt(progress) to model diminishing returns — most players return
+  // early in the day, so linear extrapolation over-estimates.
   let projection: TimeSeriesResult['projection'] | undefined;
   if (data.length > 0) {
     const nowTs = now.getTime();
     const dayEndTs = todayStart.getTime() + 24 * 60 * 60 * 1000;
     const progressRaw = (nowTs - todayStart.getTime()) / (dayEndTs - todayStart.getTime());
     const progress = Math.min(Math.max(progressRaw, 0.05), 0.999);
+    const effectiveProgress = Math.sqrt(progress);
     const latest = data[data.length - 1];
-    const estimated = Math.min(100, Math.max(latest.value, latest.value / progress));
+    const estimated = Math.min(100, Math.max(latest.value, latest.value / effectiveProgress));
     projection = {
       atDate: latest.date,
       value: Math.round(estimated * 100) / 100,
@@ -209,13 +212,15 @@ async function queryDaily(
   });
 
   // Estimate final retention for today's in-progress D-N cohort point.
+  // Uses sqrt(progress) — returns are front-loaded, so linear would over-shoot.
   let projection: TimeSeriesResult['projection'] | undefined;
   const latestPoint = data.find((p) => p.date === latestCohortStr);
   if (latestPoint) {
     const nowTs = now.getTime();
     const progressRaw = (nowTs - todayUTC.getTime()) / (24 * 60 * 60 * 1000);
     const progress = Math.min(Math.max(progressRaw, 0.05), 0.999);
-    const estimated = Math.min(100, Math.max(latestPoint.value, latestPoint.value / progress));
+    const effectiveProgress = Math.sqrt(progress);
+    const estimated = Math.min(100, Math.max(latestPoint.value, latestPoint.value / effectiveProgress));
     projection = {
       atDate: latestPoint.date,
       value: Math.round(estimated * 100) / 100,
