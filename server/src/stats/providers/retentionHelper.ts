@@ -108,13 +108,31 @@ async function queryAccumulationCurve(
     [gameId, cohortDayStr, todayStartStr, pgInterval, dayOffset]
   );
 
+  const data = rows.map((r) => ({
+    date: formatRowDate(r.date, interval),
+    value: Number(r.value || 0),
+    partial: true,
+  }));
+
+  // Estimate where retention may end by end-of-day (blue projection).
+  let projection: TimeSeriesResult['projection'] | undefined;
+  if (data.length > 0) {
+    const nowTs = now.getTime();
+    const dayEndTs = todayStart.getTime() + 24 * 60 * 60 * 1000;
+    const progressRaw = (nowTs - todayStart.getTime()) / (dayEndTs - todayStart.getTime());
+    const progress = Math.min(Math.max(progressRaw, 0.05), 0.999);
+    const latest = data[data.length - 1];
+    const estimated = Math.min(100, Math.max(latest.value, latest.value / progress));
+    projection = {
+      atDate: latest.date,
+      value: Math.round(estimated * 100) / 100,
+    };
+  }
+
   return {
     type: 'timeseries',
-    data: rows.map((r) => ({
-      date: formatRowDate(r.date, interval),
-      value: Number(r.value || 0),
-      partial: true,
-    })),
+    data,
+    projection,
   };
 }
 
@@ -181,15 +199,32 @@ async function queryDaily(
     [gameId, fromDate.toISOString(), effectiveTo.toISOString(), dayOffset]
   );
 
+  const data = rows.map((r) => {
+    const dateStr = String(r.date).slice(0, 10);
+    return {
+      date: dateStr,
+      value: Number(r.value || 0),
+      ...(dateStr === latestCohortStr ? { partial: true } : {}),
+    };
+  });
+
+  // Estimate final retention for today's in-progress D-N cohort point.
+  let projection: TimeSeriesResult['projection'] | undefined;
+  const latestPoint = data.find((p) => p.date === latestCohortStr);
+  if (latestPoint) {
+    const nowTs = now.getTime();
+    const progressRaw = (nowTs - todayUTC.getTime()) / (24 * 60 * 60 * 1000);
+    const progress = Math.min(Math.max(progressRaw, 0.05), 0.999);
+    const estimated = Math.min(100, Math.max(latestPoint.value, latestPoint.value / progress));
+    projection = {
+      atDate: latestPoint.date,
+      value: Math.round(estimated * 100) / 100,
+    };
+  }
+
   return {
     type: 'timeseries',
-    data: rows.map((r) => {
-      const dateStr = String(r.date).slice(0, 10);
-      return {
-        date: dateStr,
-        value: Number(r.value || 0),
-        ...(dateStr === latestCohortStr ? { partial: true } : {}),
-      };
-    }),
+    data,
+    projection,
   };
 }

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db/pool';
 import { registry } from '../stats/registry';
+import { getCcuSnapshot, sampleGameCcu } from '../services/ccuService';
 import {
   Range, Interval, RANGE_MS,
   INTERVAL_AVAILABILITY, DEFAULT_INTERVAL,
@@ -66,7 +67,7 @@ router.get('/:gameId/ccu', async (req: Request, res: Response) => {
 
     // Look up universe_id for this game
     const { rows } = await pool.query(
-      'SELECT universe_id FROM games WHERE id = $1',
+      'SELECT universe_id, ccu_all_time_high, ccu_all_time_high_at FROM games WHERE id = $1',
       [gameId]
     );
 
@@ -75,24 +76,37 @@ router.get('/:gameId/ccu', async (req: Request, res: Response) => {
       return;
     }
 
-    const universeId = rows[0].universe_id;
-    if (!universeId) {
-      // No universe_id linked — can't poll Roblox
-      res.json({ ccu: 0, source: 'none' });
-      return;
+    const universeId = rows[0].universe_id ? String(rows[0].universe_id) : '';
+    let source: 'poller' | 'none' | 'error' | 'on-demand' = 'none';
+
+    // Fallback bootstrap: if there is no history yet, take one on-demand sample.
+    const { rows: latestRows } = await pool.query(
+      `SELECT sampled_at
+       FROM ccu_history
+       WHERE game_id = $1
+       ORDER BY sampled_at DESC
+       LIMIT 1`,
+      [gameId]
+    );
+    const hasAnySample = latestRows.length > 0;
+    if (!hasAnySample && universeId) {
+      const sampled = await sampleGameCcu(pool, gameId, universeId);
+      source = sampled !== null ? 'on-demand' : 'error';
+    } else {
+      source = universeId ? 'poller' : 'none';
     }
 
-    // Fetch live player count from Roblox Games API
-    const robloxRes = await fetch(
-      `https://games.roblox.com/v1/games?universeIds=${universeId}`
-    );
-    const data: any = await robloxRes.json();
-    const playing = data?.data?.[0]?.playing ?? 0;
-
-    res.json({ ccu: playing, source: 'roblox' });
+    const snapshot = await getCcuSnapshot(pool, gameId);
+    res.json({
+      ccu: snapshot.latest,
+      source,
+      history: snapshot.history,
+      allTimeHigh: snapshot.allTimeHigh,
+      allTimeHighAt: snapshot.allTimeHighAt,
+    });
   } catch (error) {
     console.error('CCU error:', error);
-    res.json({ ccu: 0, source: 'error' });
+    res.json({ ccu: 0, source: 'error', history: [], allTimeHigh: 0, allTimeHighAt: null });
   }
 });
 
@@ -712,6 +726,54 @@ async function resolvePlayersToCache(playerIds: string[]): Promise<void> {
     }
   }
 }
+
+// GET /api/stats/:gameId/player-profiles?ids=1,2,3 — resolve player display names + avatars
+router.get('/:gameId/player-profiles', async (req: Request, res: Response) => {
+  try {
+    const gameId = String(req.params.gameId);
+    const idsRaw = String(req.query.ids || '');
+    if (!idsRaw) {
+      res.json({ profiles: {} });
+      return;
+    }
+
+    const { rows: gameRows } = await pool.query('SELECT id FROM games WHERE id = $1', [gameId]);
+    if (gameRows.length === 0) { res.status(404).json({ error: 'Game not found' }); return; }
+
+    const ids = Array.from(
+      new Set(
+        idsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      )
+    ).slice(0, 100);
+
+    await resolvePlayersToCache(ids);
+
+    const { rows } = await pool.query(
+      `SELECT player_id, display_name, username, avatar_url, has_verified_badge
+       FROM player_cache
+       WHERE player_id = ANY($1)`,
+      [ids]
+    );
+
+    const profiles: Record<string, { displayName: string; username: string; avatarUrl: string | null; hasVerifiedBadge: boolean }> = {};
+    for (const r of rows) {
+      profiles[r.player_id] = {
+        displayName: r.display_name || r.username || r.player_id,
+        username: r.username || r.player_id,
+        avatarUrl: r.avatar_url || null,
+        hasVerifiedBadge: !!r.has_verified_badge,
+      };
+    }
+
+    res.json({ profiles });
+  } catch (error) {
+    console.error('Player profiles error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // GET /api/stats/:gameId/users — paginated player list with playtime
 router.get('/:gameId/users', async (req: Request, res: Response) => {

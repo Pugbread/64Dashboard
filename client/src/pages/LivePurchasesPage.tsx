@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Radio, Volume2, VolumeX, Package, User } from 'lucide-react';
 import { formatCurrency, useCurrencyMode } from '../lib/currency';
+import saleSoundUrl from '../assets/shopify-sales.mp3';
 
 interface Props {
   selectedGameId: string | null;
@@ -25,54 +26,13 @@ interface LivePurchase extends RawPurchase {
   isNew: boolean;
 }
 
-/* ── Cha-ching sound via Web Audio API ── */
-let audioCtx: AudioContext | null = null;
-
-function playChaChing() {
+function playSaleSound(audio: HTMLAudioElement | null) {
+  if (!audio) return;
   try {
-    if (!audioCtx) audioCtx = new AudioContext();
-    const ctx = audioCtx;
-
-    // "Cha" — quick metallic hit
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(1500, ctx.currentTime);
-    osc1.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
-    gain1.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(ctx.currentTime);
-    osc1.stop(ctx.currentTime + 0.1);
-
-    // "Ching" — higher, longer ring
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(2400, ctx.currentTime + 0.08);
-    osc2.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + 0.5);
-    gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.08);
-    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(ctx.currentTime + 0.08);
-    osc2.stop(ctx.currentTime + 0.6);
-
-    // Harmonics for sparkle
-    const osc3 = ctx.createOscillator();
-    const gain3 = ctx.createGain();
-    osc3.type = 'sine';
-    osc3.frequency.setValueAtTime(3600, ctx.currentTime + 0.1);
-    osc3.frequency.exponentialRampToValueAtTime(2800, ctx.currentTime + 0.3);
-    gain3.gain.setValueAtTime(0.08, ctx.currentTime + 0.1);
-    gain3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc3.connect(gain3);
-    gain3.connect(ctx.destination);
-    osc3.start(ctx.currentTime + 0.1);
-    osc3.stop(ctx.currentTime + 0.4);
+    audio.currentTime = 0;
+    void audio.play();
   } catch {
-    // Audio not available
+    // Ignore autoplay or decode errors.
   }
 }
 
@@ -95,6 +55,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCountRef = useRef(0);
+  const saleAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Caches for resolved data (persist across renders)
   const playerCache = useRef<Map<string, { displayName: string | null; avatarUrl: string | null }>>(new Map());
@@ -113,37 +74,73 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  const resolvePlayer = useCallback(async (playerId: string) => {
-    if (playerCache.current.has(playerId) || pendingPlayers.current.has(playerId)) return;
-    pendingPlayers.current.add(playerId);
+  // Preload the provided Shopify sales sound.
+  useEffect(() => {
+    const audio = new Audio(saleSoundUrl);
+    audio.preload = 'auto';
+    audio.volume = 0.9;
+    saleAudioRef.current = audio;
+    return () => {
+      if (saleAudioRef.current) {
+        saleAudioRef.current.pause();
+        saleAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  const authHeaders = useCallback((): HeadersInit | undefined => {
+    const token = localStorage.getItem('token');
+    if (!token) return undefined;
+    return { Authorization: `Bearer ${token}` };
+  }, []);
+
+  const resolvePlayersBatch = useCallback(async (playerIds: string[]) => {
+    if (!selectedGameId || playerIds.length === 0) return;
+    const uncached = playerIds.filter((id) => !playerCache.current.has(id) && !pendingPlayers.current.has(id));
+    if (uncached.length === 0) return;
+    for (const id of uncached) pendingPlayers.current.add(id);
     try {
-      const [infoRes, avatarRes] = await Promise.all([
-        fetch(`/api/proxy/user-info/${playerId}`),
-        fetch(`/api/proxy/user-avatar/${playerId}`),
-      ]);
-      const info = await infoRes.json();
-      const avatar = await avatarRes.json();
-      const data = { displayName: info.displayName || null, avatarUrl: avatar.imageUrl || null };
-      playerCache.current.set(playerId, data);
-      // Update existing purchases with this player
+      const res = await fetch(
+        `/api/stats/${selectedGameId}/player-profiles?ids=${encodeURIComponent(uncached.join(','))}`,
+        { headers: authHeaders() }
+      );
+      if (!res.ok) throw new Error('Failed to resolve player profiles');
+      const data = await res.json();
+      const profiles = data?.profiles || {};
+      for (const id of uncached) {
+        const p = profiles[id];
+        playerCache.current.set(id, {
+          displayName: p?.displayName || p?.username || null,
+          avatarUrl: p?.avatarUrl || null,
+        });
+      }
       setPurchases((prev) =>
-        prev.map((p) =>
-          p.playerId === playerId ? { ...p, displayName: data.displayName, avatarUrl: data.avatarUrl } : p
-        )
+        prev.map((purchase) => {
+          const cached = playerCache.current.get(purchase.playerId);
+          if (!cached) return purchase;
+          return { ...purchase, displayName: cached.displayName, avatarUrl: cached.avatarUrl };
+        })
       );
     } catch {
-      playerCache.current.set(playerId, { displayName: null, avatarUrl: null });
+      for (const id of uncached) {
+        playerCache.current.set(id, { displayName: null, avatarUrl: null });
+      }
     } finally {
-      pendingPlayers.current.delete(playerId);
+      for (const id of uncached) pendingPlayers.current.delete(id);
     }
-  }, []);
+  }, [selectedGameId, authHeaders]);
+
+  const resolvePlayer = useCallback(async (playerId: string) => {
+    await resolvePlayersBatch([playerId]);
+  }, [resolvePlayersBatch]);
 
   const resolveProductName = useCallback(async (productId: string, productType: string) => {
     const key = `${productType}:${productId}`;
     if (productNameCache.current.has(key) || pendingProducts.current.has(key)) return;
     pendingProducts.current.add(key);
     try {
-      const res = await fetch(`/api/proxy/product-name/${productId}?type=${productType}`);
+      const res = await fetch(`/api/proxy/product-name/${productId}?type=${productType}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error('Failed to resolve product name');
       const data = await res.json();
       productNameCache.current.set(key, data.name || null);
       if (data.name) {
@@ -160,7 +157,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     } finally {
       pendingProducts.current.delete(key);
     }
-  }, []);
+  }, [authHeaders]);
 
   const resolveProductIcon = useCallback(async (productId: string, productType: string) => {
     const key = `${productType}:${productId}`;
@@ -168,7 +165,8 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     pendingIcons.current.add(key);
     try {
       const type = productType === 'gamepass' ? 'gamepass' : 'devproduct';
-      const res = await fetch(`/api/proxy/product-icons?ids=${productId}&type=${type}`);
+      const res = await fetch(`/api/proxy/product-icons?ids=${productId}&type=${type}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error('Failed to resolve product icon');
       const data = await res.json();
       const iconUrl = data[productId] || null;
       productIconCache.current.set(key, iconUrl);
@@ -184,7 +182,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     } finally {
       pendingIcons.current.delete(key);
     }
-  }, []);
+  }, [authHeaders]);
 
   // Load initial recent purchases
   const initialLoaded = useRef(false);
@@ -221,8 +219,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
         // Resolve all players and products
         const playerIds = new Set(initial.map((p) => p.playerId));
         const productKeys = new Set(initial.map((p) => `${p.productType}:${p.productId}`));
-
-        for (const pid of playerIds) resolvePlayer(pid);
+        resolvePlayersBatch(Array.from(playerIds));
         for (const key of productKeys) {
           const [type, id] = key.split(':');
           resolveProductName(id, type);
@@ -232,7 +229,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
         console.error('Failed to load recent purchases:', e);
       }
     })();
-  }, [selectedGameId, resolvePlayer, resolveProductName, resolveProductIcon]);
+  }, [selectedGameId, resolvePlayersBatch, resolveProductName, resolveProductIcon]);
 
   // Reset when game changes
   useEffect(() => {
@@ -331,7 +328,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
   useEffect(() => {
     const filtered = purchases.filter((p) => !selectedGameId || p.gameId === selectedGameId);
     if (filtered.length > prevCountRef.current && soundOn) {
-      playChaChing();
+      playSaleSound(saleAudioRef.current);
     }
     prevCountRef.current = filtered.length;
   }, [purchases, selectedGameId, soundOn]);

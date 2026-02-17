@@ -6,7 +6,8 @@ import Dropdown from '../components/Dropdown';
 import LazyChart from '../components/LazyChart';
 import PlaytimeDistribution from '../components/PlaytimeDistribution';
 import RevenueComboChart from '../components/RevenueComboChart';
-import { Users } from 'lucide-react';
+import { Users, Trophy } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const RANGE_OPTIONS = [
   { value: '1h', label: '1 Hour' },
@@ -63,11 +64,71 @@ interface CategoryPageProps {
   selectedGameId: string | null;
 }
 
+function useAnimatedNumber(target: number, durationMs = 350): number {
+  const [value, setValue] = useState(target);
+
+  useEffect(() => {
+    const start = value;
+    const delta = target - start;
+    if (delta === 0) return;
+
+    const startAt = performance.now();
+    let frame = 0;
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const tick = (now: number) => {
+      const t = Math.min((now - startAt) / durationMs, 1);
+      const eased = easeOutCubic(t);
+      setValue(Math.round(start + delta * eased));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target]); // intentionally animate from current rendered value
+
+  return value;
+}
+
+function MiniCcuSparkline({ points }: { points: number[] }) {
+  if (points.length < 2) {
+    return <div className="h-12 rounded-btn bg-white/[0.02]" />;
+  }
+
+  const data = points.map((value, i) => ({ x: i, value }));
+
+  return (
+    <div className="h-12">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="ccuAreaGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(96,165,250,0.4)" />
+              <stop offset="100%" stopColor="rgba(96,165,250,0.03)" />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="rgba(96,165,250,0.98)"
+            strokeWidth={2.2}
+            fill="url(#ccuAreaGradient)"
+            isAnimationActive={false}
+            dot={false}
+            activeDot={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export default function CategoryPage({ category, selectedGameId }: CategoryPageProps) {
   const [range, setRange] = useState<Range>(category === 'retention' ? '7d' as Range : '24h');
   const [interval, setInterval] = useState<Interval>(category === 'retention' ? '1d' as Interval : '1h');
   const { meta } = useMeta();
-  const { ccu } = useCCU(category === 'engagement' ? selectedGameId : null);
+  const { ccu, history, allTimeHigh, allTimeHighAt } = useCCU(category === 'engagement' ? selectedGameId : null);
+  const animatedCcu = useAnimatedNumber(ccu);
 
   // Get providers for this category from meta
   const providers: ProviderMeta[] = meta
@@ -118,18 +179,45 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
         </div>
       </div>
 
-      {/* CCU banner */}
+      {/* CCU cards */}
       {category === 'engagement' && ccu !== null && (
-        <div className="card p-5 flex items-center gap-4">
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-btn bg-accent-muted flex items-center justify-center">
-              <Users size={18} className="text-accent" />
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-5">
+          <div className="card p-5">
+            <div className="relative z-10">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-btn bg-accent-muted flex items-center justify-center">
+                    <Users size={16} className="text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">CCU</p>
+                    <p className="text-white text-2xl font-bold tracking-tight">{animatedCcu.toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse ml-1" />
+              </div>
+              <div className="mt-3">
+                <MiniCcuSparkline points={history} />
+              </div>
             </div>
-            <div>
-              <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">Concurrent Users</p>
-              <p className="text-white text-2xl font-bold tracking-tight">{ccu.toLocaleString()}</p>
+          </div>
+          <div className="card p-5 min-h-[118px]">
+            <div className="relative z-10 h-full flex flex-col">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-btn bg-yellow-500/10 flex items-center justify-center">
+                  <Trophy size={16} className="text-yellow-400" />
+                </div>
+                <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">All Time High</p>
+              </div>
+              <p className="text-white text-[40px] leading-none font-extrabold tracking-tight mt-2">
+                {allTimeHigh.toLocaleString()}
+              </p>
+              <div className="mt-auto pt-2 text-center">
+                <p className="text-text-muted text-[10px] font-medium">
+                  {allTimeHighAt ? new Date(allTimeHighAt).toLocaleDateString() : 'No ATH yet'}
+                </p>
+              </div>
             </div>
-            <div className="w-2 h-2 rounded-full bg-accent animate-pulse ml-1" />
           </div>
         </div>
       )}

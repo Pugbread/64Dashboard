@@ -13,6 +13,7 @@ import eventsRoutes from './routes/events';
 import statsRoutes from './routes/stats';
 import proxyRoutes from './routes/proxy';
 import { setupWebSocket } from './ws';
+import { startCcuPoller } from './services/ccuPoller';
 
 const app = express();
 const server = http.createServer(app);
@@ -70,6 +71,7 @@ async function start() {
   try {
     await retry(() => runMigrations(pool), 10, 5000);
     console.log('Database migrations complete');
+    startCcuPoller(pool);
   } catch (error: any) {
     console.error('Migration failed after retries:', error.message);
   }

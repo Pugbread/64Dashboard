@@ -6,6 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ReferenceDot,
 } from 'recharts';
 import { TimeSeriesResult, ProviderMeta, TimeSeriesPoint } from '../hooks/useStats';
 import { formatCurrency, useCurrencyMode } from '../lib/currency';
@@ -46,42 +47,62 @@ function formatTooltipLabel(dateStr: string, interval: string): string {
     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
+type ChartPoint = {
+  date: string;
+  solid: number | null;
+  partial: number | null;
+  estimate: number | null;
+};
+
 /**
- * Build chart data with split solid/partial series.
- * - `solid`: value for complete data points (null for partial-only points)
- * - `partial`: value for the dashed segment (bridge point + partial point)
+ * Build chart data with split solid/partial/estimate series.
+ *
+ * - `solid`: completed data points
+ * - `partial`: dashed segment for accumulating data (bridge + partial points)
+ * - `estimate`: blue dotted line from the partial value to the projected value
+ *
+ * The estimate line goes from the partial point's actual value to the projected
+ * value, both at the SAME x-coordinate. To draw this as a visible line segment,
+ * we put the estimate start on the second-to-last point (at the bridge or
+ * second-to-last partial), and the estimate end on the last partial point.
  */
-function buildChartData(data: TimeSeriesPoint[]) {
+function buildChartData(data: TimeSeriesPoint[], projection?: TimeSeriesResult['projection']): ChartPoint[] {
   const hasPartial = data.some((p) => p.partial);
-  if (!hasPartial) {
-    // No partial points — everything is solid
-    return data.map((p) => ({ date: p.date, solid: p.value, partial: null as number | null }));
+  let base: ChartPoint[] = hasPartial
+    ? (() => {
+      const partialIdx = data.findIndex((p) => p.partial);
+      return data.map((p, i) => {
+        if (i < partialIdx - 1) return { date: p.date, solid: p.value, partial: null, estimate: null };
+        if (i === partialIdx - 1) return { date: p.date, solid: p.value, partial: p.value, estimate: null };
+        return { date: p.date, solid: null, partial: p.value, estimate: null };
+      });
+    })()
+    : data.map((p) => ({ date: p.date, solid: p.value, partial: null, estimate: null }));
+
+  if (!projection) return base;
+
+  // Find the partial point where the projection sits
+  const atIdx = base.findIndex((p) => p.date === projection.atDate);
+  if (atIdx < 0) return base;
+
+  // Set estimate on the projection point to the estimated value
+  base[atIdx] = { ...base[atIdx], estimate: projection.value };
+
+  // Also set estimate on the previous point so the line has a visible segment
+  // (from previous point's actual value → projection point's estimated value)
+  if (atIdx > 0) {
+    const prev = base[atIdx - 1];
+    base[atIdx - 1] = { ...prev, estimate: prev.partial ?? prev.solid };
   }
 
-  // Find the index where partial starts
-  const partialIdx = data.findIndex((p) => p.partial);
-
-  return data.map((p, i) => {
-    if (i < partialIdx - 1) {
-      // Pure solid
-      return { date: p.date, solid: p.value, partial: null as number | null };
-    }
-    if (i === partialIdx - 1) {
-      // Bridge point: both solid and partial connect here
-      return { date: p.date, solid: p.value, partial: p.value };
-    }
-    if (i >= partialIdx) {
-      // Partial segment
-      return { date: p.date, solid: null as number | null, partial: p.value };
-    }
-    return { date: p.date, solid: p.value, partial: null as number | null };
-  });
+  return base;
 }
 
 export default function TimeSeriesChart({ provider, result, interval }: TimeSeriesChartProps) {
   const { currencyMode } = useCurrencyMode();
   const color = CATEGORY_COLORS[provider.category] || '#3B82F6';
   const hasPartial = result.data.some((p) => p.partial);
+  const hasProjection = provider.category === 'retention' && !!result.projection;
 
   const formatValue = (value: number, format?: string): string => {
     if (format === 'duration') {
@@ -122,9 +143,10 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
   const avg = result.data.reduce((sum, p) => sum + p.value, 0) / result.data.length;
   const total = result.data.reduce((sum, p) => sum + p.value, 0);
   const displayValue = formatValue(avg, provider.format);
-  const chartData = buildChartData(result.data);
+  const chartData = buildChartData(result.data, hasProjection ? result.projection : undefined);
+  const yMaxBase = Math.max(...result.data.map((p) => p.value), 0);
+  const yMax = hasProjection ? Math.max(yMaxBase, result.projection?.value ?? 0) : yMaxBase;
 
-  // Revenue gets both Total and Average in the headline
   const isRevenue = provider.id === 'revenue';
 
   return (
@@ -172,6 +194,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 tick={{ fill: '#64748B', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
+                domain={[0, yMax > 0 ? yMax * 1.15 : 1]}
                 tickFormatter={(v) =>
                   provider.format === 'currency'
                     ? formatCurrency(Number(v), currencyMode, false)
@@ -190,8 +213,15 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 }}
                 formatter={(value: any, name: string, props: any) => {
                   if (value === null || value === undefined) return [null, null];
+                  const payload = props?.payload;
                   // On bridge point (both solid & partial exist), skip the duplicate partial entry
-                  if (name === 'partial' && props?.payload?.solid != null) return [null, null];
+                  if (name === 'partial' && payload?.solid != null) return [null, null];
+                  // Estimate: show it, but skip on bridge point where it equals the actual value
+                  if (name === 'estimate') {
+                    const actualVal = payload?.partial ?? payload?.solid;
+                    if (actualVal != null && Math.abs(Number(actualVal) - Number(value)) < 0.05) return [null, null];
+                    return [formatValue(Number(value), provider.format), `${provider.name} (estimated)`];
+                  }
                   const label = name === 'partial' ? `${provider.name} (accumulating)` : provider.name;
                   return [formatValue(Number(value), provider.format), label];
                 }}
@@ -223,6 +253,34 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   dot={false}
                   activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2, strokeDasharray: '' }}
                   connectNulls={false}
+                />
+              )}
+
+              {/* Blue dotted estimate line — branches from partial to estimated value */}
+              {hasProjection && (
+                <Area
+                  type="monotone"
+                  dataKey="estimate"
+                  stroke="#60A5FA"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  fill="none"
+                  dot={false}
+                  activeDot={{ r: 5, fill: '#60A5FA', stroke: '#0B1220', strokeWidth: 2 }}
+                  connectNulls
+                />
+              )}
+
+              {/* Blue dot at the estimated final value */}
+              {hasProjection && result.projection && (
+                <ReferenceDot
+                  x={result.projection.atDate}
+                  y={result.projection.value}
+                  r={5}
+                  fill="#60A5FA"
+                  stroke="#0B1220"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
                 />
               )}
             </AreaChart>

@@ -90,6 +90,26 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_sessions_player_started ON sessions(player_id, started_at);
     `,
   },
+  {
+    name: '006_ccu_history',
+    sql: `
+      ALTER TABLE games
+      ADD COLUMN IF NOT EXISTS ccu_all_time_high INTEGER NOT NULL DEFAULT 0;
+
+      ALTER TABLE games
+      ADD COLUMN IF NOT EXISTS ccu_all_time_high_at TIMESTAMPTZ;
+
+      CREATE TABLE IF NOT EXISTS ccu_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        game_id UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+        ccu INTEGER NOT NULL,
+        sampled_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ccu_history_game_sampled
+        ON ccu_history(game_id, sampled_at DESC);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<void> {

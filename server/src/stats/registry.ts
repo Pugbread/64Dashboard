@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { StatProvider, StatResult, Interval } from './types';
 
 import { activeUsersProvider } from './providers/activeUsers';
+import { activeUsersAccumulatedProvider } from './providers/activeUsersAccumulated';
 import { avgSessionTimeProvider } from './providers/avgSessionTime';
 import { avgPlaytimeProvider } from './providers/avgPlaytime';
 import { avgJoinsProvider } from './providers/avgJoins';
@@ -10,6 +11,7 @@ import { purchasesProvider } from './providers/purchases';
 import { arpuProvider } from './providers/arpu';
 import { arppuProvider } from './providers/arppu';
 import { conversionRateProvider } from './providers/conversionRate';
+import { purchasesPerPayingUserProvider } from './providers/purchasesPerPayingUser';
 import { d1RetentionProvider } from './providers/d1Retention';
 import { d7RetentionProvider } from './providers/d7Retention';
 
@@ -99,6 +101,7 @@ export const registry = new StatRegistry();
 
 // ── Register providers (add new ones here) ──────────────────
 registry.register(activeUsersProvider);
+registry.register(activeUsersAccumulatedProvider);
 registry.register(avgSessionTimeProvider);
 registry.register(avgPlaytimeProvider);
 registry.register(avgJoinsProvider);
@@ -107,5 +110,6 @@ registry.register(purchasesProvider);
 registry.register(arpuProvider);
 registry.register(arppuProvider);
 registry.register(conversionRateProvider);
+registry.register(purchasesPerPayingUserProvider);
 registry.register(d1RetentionProvider);
 registry.register(d7RetentionProvider);

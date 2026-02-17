@@ -55,9 +55,15 @@ export interface TimeSeriesPoint {
   partial?: boolean; // true if this bucket is still accumulating
 }
 
+export interface TimeSeriesProjection {
+  atDate: string;
+  value: number;
+}
+
 export interface TimeSeriesResult {
   type: 'timeseries';
   data: TimeSeriesPoint[];
+  projection?: TimeSeriesProjection;
 }
 
 export type StatResult = TimeSeriesResult;
