@@ -15,6 +15,8 @@ import { TimeSeriesPoint } from '../hooks/useStats';
 import { AlertTriangle } from 'lucide-react';
 import { formatCurrency, useCurrencyMode } from '../lib/currency';
 
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
 interface RevenueComboChartProps {
   gameId: string;
   range: string;
@@ -228,6 +230,7 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                   stroke: '#080808',
                   strokeWidth: 2,
                 }}
+                isAnimationActive={!isMobile}
               />
               <Line
                 yAxisId="purchases"
@@ -238,6 +241,7 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 4, fill: '#60A5FA', stroke: '#080808', strokeWidth: 2 }}
+                isAnimationActive={!isMobile}
               />
             </ComposedChart>
           </ResponsiveContainer>

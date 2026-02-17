@@ -90,12 +90,24 @@ function useAnimatedNumber(target: number, durationMs = 350): number {
   return value;
 }
 
+function downsample(arr: number[], maxPoints: number): number[] {
+  if (arr.length <= maxPoints) return arr;
+  const step = arr.length / maxPoints;
+  const result: number[] = [];
+  for (let i = 0; i < maxPoints; i++) {
+    result.push(arr[Math.floor(i * step)]);
+  }
+  return result;
+}
+
 function MiniCcuSparkline({ points }: { points: number[] }) {
   if (points.length < 2) {
     return <div className="h-12 rounded-btn bg-white/[0.02]" />;
   }
 
-  const data = points.map((value, i) => ({ x: i, value }));
+  // Cap at 60 points to keep SVG lightweight on mobile
+  const sampled = downsample(points, 60);
+  const data = sampled.map((value, i) => ({ x: i, value }));
 
   return (
     <div className="h-12">
@@ -243,7 +255,7 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
             )}
             {standardProviders.map((p) => (
               <LazyChart
-                key={`${p.id}-${range}-${interval}`}
+                key={p.id}
                 gameId={selectedGameId}
                 category={category}
                 provider={p}

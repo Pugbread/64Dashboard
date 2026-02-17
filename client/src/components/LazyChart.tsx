@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getProviderStat } from '../api/client';
 import { ProviderMeta, TimeSeriesResult } from '../hooks/useStats';
 import TimeSeriesChart from './TimeSeriesChart';
@@ -16,25 +16,36 @@ export default function LazyChart({ gameId, category, provider, range, interval 
   const [result, setResult] = useState<TimeSeriesResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
       const { data } = await getProviderStat(gameId, category, provider.id, range, interval);
+      if (controller.signal.aborted) return;
       const metric: TimeSeriesResult = data.metrics[provider.id] || { type: 'timeseries', data: [] };
       setResult(metric);
     } catch (err: any) {
-      setResult(null);
+      if (controller.signal.aborted) return;
       setError(err?.message || 'Failed to load');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, [gameId, category, provider.id, range, interval]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+    return () => { abortRef.current?.abort(); };
+  }, [fetchData]);
 
-  if (loading) {
+  // First load — no data yet, show skeleton
+  if (loading && !result) {
     return (
       <div className="card p-7 animate-pulse">
         <div className="relative z-10">
@@ -46,7 +57,7 @@ export default function LazyChart({ gameId, category, provider, range, interval 
     );
   }
 
-  if (error) {
+  if (error && !result) {
     return (
       <div className="card p-7">
         <div className="relative z-10">
@@ -66,11 +77,19 @@ export default function LazyChart({ gameId, category, provider, range, interval 
     );
   }
 
+  // Show previous data while refetching (with a subtle loading indicator)
   return (
-    <TimeSeriesChart
-      provider={provider}
-      result={result || { type: 'timeseries', data: [] }}
-      interval={interval}
-    />
+    <div className="relative">
+      {loading && (
+        <div className="absolute top-3 right-3 z-20">
+          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+        </div>
+      )}
+      <TimeSeriesChart
+        provider={provider}
+        result={result || { type: 'timeseries', data: [] }}
+        interval={interval}
+      />
+    </div>
   );
 }

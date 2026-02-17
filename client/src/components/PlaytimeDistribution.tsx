@@ -11,6 +11,8 @@ import {
 } from 'recharts';
 import { Clock, TrendingUp, Users, BarChart3 } from 'lucide-react';
 
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
 interface Props {
   gameId: string | null;
   range: string;
@@ -222,6 +224,7 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
                     fill="url(#lorenzFill)"
                     dot={false}
                     activeDot={{ r: 4, fill: '#3B82F6', stroke: '#fff', strokeWidth: 2 }}
+                    isAnimationActive={!isMobile}
                   />
                 </AreaChart>
               </ResponsiveContainer>

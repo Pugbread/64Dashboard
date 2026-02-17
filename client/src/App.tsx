@@ -94,14 +94,14 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="min-h-screen bg-bg-primary relative">
-      {/* Atmospheric glow */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      {/* Atmospheric glow — hidden on mobile to save GPU */}
+      <div className="hidden lg:block fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-12%] left-[34%] w-[760px] h-[520px] bg-accent/[0.035] rounded-full blur-[170px]" />
         <div className="absolute bottom-[8%] right-[8%] w-[420px] h-[420px] bg-accent/[0.025] rounded-full blur-[130px]" />
       </div>
 
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-bg-primary/95 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-bg-primary border-b border-border px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => setSidebarOpen(true)}
           className="w-9 h-9 rounded-btn flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/5 transition-colors"
@@ -114,7 +114,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
       {/* Overlay for mobile sidebar */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 z-[55] bg-black/70"
           onClick={() => setSidebarOpen(false)}
         />
       )}

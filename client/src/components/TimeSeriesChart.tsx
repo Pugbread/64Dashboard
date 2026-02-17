@@ -11,6 +11,8 @@ import {
 import { TimeSeriesResult, ProviderMeta, TimeSeriesPoint } from '../hooks/useStats';
 import { formatCurrency, useCurrencyMode } from '../lib/currency';
 
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
 interface TimeSeriesChartProps {
   provider: ProviderMeta;
   result: TimeSeriesResult;
@@ -238,6 +240,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 dot={false}
                 activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2 }}
                 connectNulls={false}
+                isAnimationActive={!isMobile}
               />
 
               {/* Dashed line — partial/accumulating data */}
@@ -253,6 +256,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   dot={false}
                   activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2, strokeDasharray: '' }}
                   connectNulls={false}
+                  isAnimationActive={!isMobile}
                 />
               )}
 
@@ -268,6 +272,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   dot={false}
                   activeDot={{ r: 5, fill: '#60A5FA', stroke: '#0B1220', strokeWidth: 2 }}
                   connectNulls
+                  isAnimationActive={false}
                 />
               )}
 

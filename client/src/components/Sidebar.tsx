@@ -84,7 +84,7 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
   return (
     <aside
       className={`
-        w-[240px] h-screen bg-bg-primary/95 backdrop-blur-md border-r border-border flex flex-col fixed left-0 top-0 z-[60]
+        w-[240px] h-screen bg-bg-primary border-r border-border flex flex-col fixed left-0 top-0 z-[60] lg:bg-bg-primary/95 lg:backdrop-blur-md
         transition-transform duration-300 ease-out
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
