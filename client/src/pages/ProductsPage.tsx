@@ -72,21 +72,6 @@ export default function ProductsPage({ selectedGameId }: Props) {
         <p className="text-text-muted text-[13px] mt-1">Product breakdown and analytics</p>
         <div className="flex flex-wrap items-center gap-2.5 mt-5">
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={setRange} />
-          <Dropdown
-            value={sortField}
-            options={SORT_OPTIONS}
-            onChange={(v) => { setSortField(v as ProductSort); setSortDir('desc'); }}
-          />
-          <button
-            onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}
-            className="flex items-center justify-center w-9 h-9 rounded-btn bg-bg-card border border-white/[0.04] text-text-secondary hover:text-white transition-colors"
-            title={sortDir === 'desc' ? 'Highest first' : 'Lowest first'}
-          >
-            {sortDir === 'desc'
-              ? <ArrowDownNarrowWide size={15} />
-              : <ArrowUpNarrowWide size={15} />
-            }
-          </button>
         </div>
       </div>
 
@@ -111,6 +96,28 @@ export default function ProductsPage({ selectedGameId }: Props) {
             loading={flowsLoading}
           />
           {sortedTower.length > 0 && <ProductTowers products={sortedTower} sortField={sortField} />}
+
+          {/* Sort controls — positioned right above the list */}
+          {data && data.products.length > 0 && (
+            <div className="flex items-center gap-2.5">
+              <Dropdown
+                value={sortField}
+                options={SORT_OPTIONS}
+                onChange={(v) => { setSortField(v as ProductSort); setSortDir('desc'); }}
+              />
+              <button
+                onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}
+                className="flex items-center justify-center w-9 h-9 rounded-btn bg-bg-card border border-white/[0.04] text-text-secondary hover:text-white transition-colors"
+                title={sortDir === 'desc' ? 'Highest first' : 'Lowest first'}
+              >
+                {sortDir === 'desc'
+                  ? <ArrowDownNarrowWide size={15} />
+                  : <ArrowUpNarrowWide size={15} />
+                }
+              </button>
+            </div>
+          )}
+
           {data && data.products.length > 0 && (
             <ProductList
               products={data.products}
