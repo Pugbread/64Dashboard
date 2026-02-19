@@ -38,7 +38,7 @@ export default function Games() {
                 {game.icon_url ? (
                   <img src={game.icon_url} alt={game.name} className="w-12 h-12 rounded-btn object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-btn bg-bg-elevated flex items-center justify-center border border-border">
+                  <div className="w-12 h-12 rounded-btn bg-bg-elevated flex items-center justify-center ">
                     <Gamepad2 size={20} className="text-text-muted" />
                   </div>
                 )}

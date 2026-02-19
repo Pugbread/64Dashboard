@@ -103,7 +103,7 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
                   <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
                     {formatProductValue(val, sortField, currencyMode)}
                   </p>
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden mb-1 z-10">
                     {product.iconUrl ? (
                       <img src={product.iconUrl} alt={product.productName} className="w-full h-full object-cover" />
                     ) : (
@@ -111,7 +111,7 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
                     )}
                   </div>
                   <div
-                    className={`w-full rounded-t-[4px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                    className={`w-full rounded-t-[2px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
                     style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
                   >
                     {i < 5 && (
@@ -169,7 +169,7 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
                   <p className="text-white text-[8px] sm:text-[10px] font-bold mb-1 text-center whitespace-nowrap cursor-default" title={val.toLocaleString()}>
                     {sortField === 'spent' ? formatRobux(val, currencyMode) : val.toLocaleString()}
                   </p>
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border mb-1 z-10">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden mb-1 z-10">
                     {spender.avatarUrl ? (
                       <img src={spender.avatarUrl} alt={spender.displayName} className="w-full h-full object-cover" />
                     ) : (
@@ -177,7 +177,7 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
                     )}
                   </div>
                   <div
-                    className={`w-full rounded-t-[4px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                    className={`w-full rounded-t-[2px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
                     style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
                   >
                     {i < 5 && (
@@ -207,7 +207,7 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
 export function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-6 sm:px-7 py-3 border-t border-border">
+    <div className="flex items-center justify-between px-6 sm:px-7 py-3 border-t border-white/[0.03]">
       <button
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
@@ -279,7 +279,7 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-t border-b border-border">
+              <tr className="border-b border-white/[0.03]">
                 <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Product</th>
                 <th className="px-3 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Type</th>
                 {thBtn('revenue', 'Revenue')}
@@ -291,10 +291,10 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
             </thead>
             <tbody>
               {sorted.map((p, i) => (
-                <tr key={p.productId} className={`border-b border-border/50 transition-colors hover:bg-white/[0.02] ${i === sorted.length - 1 ? 'border-b-0' : ''}`}>
+                <tr key={p.productId} className={`border-b border-white/[0.02] transition-colors hover:bg-white/[0.015] ${i === sorted.length - 1 ? 'border-b-0' : ''}`}>
                   <td className="px-6 sm:px-7 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border">
+                      <div className="w-8 h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden">
                         {p.iconUrl ? <img src={p.iconUrl} alt={p.productName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package size={12} className="text-text-muted" /></div>}
                       </div>
                       <span className="text-white text-[13px] font-medium truncate">{p.productName}</span>
@@ -373,7 +373,7 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-t border-b border-border">
+              <tr className="border-b border-white/[0.03]">
                 <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Player</th>
                 {thBtn('spent', 'Robux Spent')}
                 {thBtn('purchases', 'Purchases')}
@@ -381,10 +381,10 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
             </thead>
             <tbody>
               {sorted.map((s, i) => (
-                <tr key={s.playerId} className={`border-b border-border/50 transition-colors hover:bg-white/[0.02] ${i === sorted.length - 1 ? 'border-b-0' : ''}`}>
+                <tr key={s.playerId} className={`border-b border-white/[0.02] transition-colors hover:bg-white/[0.015] ${i === sorted.length - 1 ? 'border-b-0' : ''}`}>
                   <td className="px-6 sm:px-7 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border">
+                      <div className="w-8 h-8 shrink-0 rounded-full bg-bg-elevated overflow-hidden">
                         {s.avatarUrl ? <img src={s.avatarUrl} alt={s.displayName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><User size={12} className="text-text-muted" /></div>}
                       </div>
                       <span className="text-white text-[13px] font-medium truncate">{s.displayName}</span>
@@ -448,7 +448,7 @@ export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: Produc
             return (
               <div
                 key={idx}
-                className="flex items-center gap-3 px-4 py-3 rounded-btn bg-white/[0.02] border border-border/50 hover:border-border transition-colors"
+                className="flex items-center gap-3 px-4 py-3 rounded-btn bg-white/[0.02] hover:bg-white/[0.03] transition-colors"
               >
                 <span className={`text-[13px] font-bold w-5 shrink-0 ${FLOW_RANK_COLORS[idx] || 'text-text-muted'}`}>
                   {idx + 1}
@@ -460,8 +460,8 @@ export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: Produc
                       {pIdx > 0 && (
                         <ArrowRight size={12} className="text-text-muted/50 shrink-0" />
                       )}
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-btn bg-bg-elevated border border-border/50">
-                        <div className="w-5 h-5 shrink-0 rounded-sm bg-bg-primary overflow-hidden border border-border/50">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-btn bg-bg-elevated">
+                        <div className="w-5 h-5 shrink-0 rounded-sm bg-bg-primary overflow-hidden">
                           <div className="w-full h-full flex items-center justify-center">
                             <Package size={10} className="text-text-muted" />
                           </div>

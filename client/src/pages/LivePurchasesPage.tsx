@@ -349,7 +349,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
       {/* Feed */}
       <div className="card overflow-hidden">
         <div className="relative z-10">
-          <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 px-6 md:px-7 py-3 border-b border-border">
+          <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 px-6 md:px-7 py-3 border-b border-white/[0.03]">
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider" />
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Player</span>
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Product</span>
@@ -364,7 +364,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
               <p className="text-text-muted text-[11px] mt-1">Purchases will appear here in real time</p>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-white/[0.02]">
               {filteredPurchases.map((p) => (
                 <PurchaseRow key={p.uid} purchase={p} currencyMode={currencyMode} />
               ))}
@@ -387,7 +387,7 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
     >
       {/* Desktop layout */}
       <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 items-center">
-        <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden border border-border shrink-0">
+        <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden  shrink-0">
           {p.avatarUrl ? (
             <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -407,7 +407,7 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
         </div>
 
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border">
+          <div className="w-8 h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden ">
             {p.productIconUrl ? (
               <img src={p.productIconUrl} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -435,7 +435,7 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
 
       {/* Mobile layout */}
       <div className="md:hidden flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden border border-border shrink-0">
+        <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden  shrink-0">
           {p.avatarUrl ? (
             <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -455,7 +455,7 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
           </div>
           <div className="flex items-center justify-between gap-2 mt-0.5">
             <div className="flex items-center gap-1.5 min-w-0">
-              <div className="w-4 h-4 shrink-0 rounded-sm bg-bg-elevated overflow-hidden border border-border">
+              <div className="w-4 h-4 shrink-0 rounded-sm bg-bg-elevated overflow-hidden ">
                 {p.productIconUrl ? (
                   <img src={p.productIconUrl} alt="" className="w-full h-full object-cover" />
                 ) : (

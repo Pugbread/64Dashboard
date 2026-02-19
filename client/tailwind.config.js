@@ -29,9 +29,9 @@ export default {
           muted: '#525866',
         },
         border: {
-          DEFAULT: 'rgba(255, 255, 255, 0.06)',
-          subtle: 'rgba(255, 255, 255, 0.04)',
-          accent: 'rgba(59, 130, 246, 0.25)',
+          DEFAULT: 'rgba(255, 255, 255, 0.04)',
+          subtle: 'rgba(255, 255, 255, 0.02)',
+          accent: 'rgba(59, 130, 246, 0.20)',
         },
       },
       fontFamily: {
@@ -39,9 +39,9 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       borderRadius: {
-        card: '10px',
-        btn: '8px',
-        pill: '20px',
+        card: '3px',
+        btn: '3px',
+        pill: '14px',
       },
       boxShadow: {
         card: '0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2)',

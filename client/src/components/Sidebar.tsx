@@ -112,7 +112,7 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
 
       {/* Game selector */}
       <div className="px-4 pb-4 pt-2">
-        <div className="bg-bg-card rounded-card overflow-hidden border border-border">
+        <div className="bg-bg-card rounded-card overflow-hidden">
           <div className="w-full aspect-[2/1] bg-bg-elevated relative overflow-hidden">
             {selectedGame?.icon_url ? (
               <img src={selectedGame.icon_url} alt={selectedGame.name} className="w-full h-full object-cover" />

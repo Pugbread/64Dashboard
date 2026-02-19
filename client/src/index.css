@@ -27,7 +27,7 @@
 @layer components {
   .card {
     @apply bg-bg-card rounded-card relative;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.03);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
@@ -39,7 +39,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: 10px;
+      border-radius: 3px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, transparent 40%);
       pointer-events: none;
     }
@@ -49,8 +49,8 @@
     @apply transition-all duration-300 ease-out;
   }
   .card-hover:hover {
-    border-color: rgba(255, 255, 255, 0.10);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.06);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
     transform: translateY(-1px);
   }
 
@@ -84,6 +84,6 @@
   }
 
   .glass-border {
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.03);
   }
 }

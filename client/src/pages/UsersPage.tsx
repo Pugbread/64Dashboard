@@ -153,7 +153,7 @@ export default function UsersPage({ selectedGameId }: Props) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-t border-b border-border">
+                    <tr className="border-b border-white/[0.03]">
                       <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Player</th>
                       <th className="px-4 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right">
                         <span className="inline-flex items-center gap-1"><Clock size={10} /> Playtime</span>
@@ -166,10 +166,10 @@ export default function UsersPage({ selectedGameId }: Props) {
                   </thead>
                   <tbody>
                     {users.map((u, i) => (
-                      <tr key={u.playerId} className={`border-b border-border/50 transition-colors hover:bg-white/[0.02] ${i === users.length - 1 ? 'border-b-0' : ''}`}>
+                      <tr key={u.playerId} className={`border-b border-white/[0.02] transition-colors hover:bg-white/[0.015] ${i === users.length - 1 ? 'border-b-0' : ''}`}>
                         <td className="px-6 sm:px-7 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 shrink-0 rounded-full bg-bg-elevated overflow-hidden border border-border">
+                            <div className="w-9 h-9 shrink-0 rounded-full bg-bg-elevated overflow-hidden">
                               {u.avatarUrl ? (
                                 <img src={u.avatarUrl} alt={u.displayName} className="w-full h-full object-cover" />
                               ) : (
@@ -210,7 +210,7 @@ export default function UsersPage({ selectedGameId }: Props) {
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between px-6 sm:px-7 py-3 border-t border-border">
+                <div className="flex items-center justify-between px-6 sm:px-7 py-3 border-t border-white/[0.03]">
                   <button
                     disabled={page <= 1}
                     onClick={() => setPage(page - 1)}
