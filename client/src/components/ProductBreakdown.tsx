@@ -243,94 +243,111 @@ function formatMinutesFull(mins: number | null): string {
   return `${mins.toFixed(1)} minutes`;
 }
 
-export function ProductTable({ products, sortField, sortDir, onSortChange, page, totalPages, onPageChange }: { products: ProductEntry[]; sortField: ProductSort; sortDir: SortDir; onSortChange: (f: ProductSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
+const METRIC_LABELS: Record<ProductSort, string> = {
+  revenue: 'Revenue',
+  sales: 'Sales',
+  avgSession: 'Avg Session',
+  avgPlaytime: 'Avg Playtime',
+  repeat: 'Repeat Rate',
+};
+
+function formatHeroValue(p: ProductEntry, field: ProductSort, currencyMode: CurrencyMode): string {
+  switch (field) {
+    case 'sales': return p.sales.toLocaleString();
+    case 'avgSession': return formatMinutes(p.avgSessionMin);
+    case 'avgPlaytime': return formatMinutes(p.avgTotalPlaytimeMin);
+    case 'repeat': return p.repeatSpenderRate !== null ? `${p.repeatSpenderRate}%` : '—';
+    default: return formatRobux(p.revenue, currencyMode);
+  }
+}
+
+function formatHeroValueFull(p: ProductEntry, field: ProductSort, currencyMode: CurrencyMode): string {
+  switch (field) {
+    case 'sales': return `${p.sales.toLocaleString()} sales`;
+    case 'avgSession': return formatMinutesFull(p.avgSessionMin);
+    case 'avgPlaytime': return formatMinutesFull(p.avgTotalPlaytimeMin);
+    case 'repeat': return p.repeatSpenderRate !== null ? `${p.repeatSpenderRate}% of buyers purchased again` : 'No data';
+    default: return formatRobuxFull(p.revenue, currencyMode);
+  }
+}
+
+export function ProductList({ products, sortField, sortDir, page, totalPages, onPageChange }: {
+  products: ProductEntry[];
+  sortField: ProductSort;
+  sortDir: SortDir;
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+}) {
   const { currencyMode } = useCurrencyMode();
   if (products.length === 0) return null;
+
   const sorted = [...products].sort((a, b) => {
     const diff = getProductValue(b, sortField) - getProductValue(a, sortField);
     return sortDir === 'asc' ? -diff : diff;
   });
 
-  const sortIcon = (field: ProductSort) => {
-    if (sortField !== field) return <ArrowUpDown size={10} className="opacity-0 group-hover:opacity-50" />;
-    return sortDir === 'desc'
-      ? <ArrowDown size={10} className="opacity-100" />
-      : <ArrowUp size={10} className="opacity-100" />;
-  };
-
-  const thBtn = (field: ProductSort, label: string) => (
-    <th className="px-3 py-3 text-[10px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group text-right whitespace-nowrap" onClick={() => onSortChange(field)}>
-      <span className={`inline-flex items-center gap-1 ${sortField === field ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'}`}>
-        {label}
-        {sortIcon(field)}
-      </span>
-    </th>
-  );
-
   return (
     <div className="card overflow-hidden">
       <div className="relative z-10">
-        <div className="px-6 sm:px-7 pt-5 pb-3">
+        <div className="px-6 sm:px-7 pt-5 pb-4">
           <div className="flex items-center gap-2.5">
             <ShoppingBag size={15} className="text-accent" />
             <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">All Products</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-white/[0.03]">
-                <th className="px-6 sm:px-7 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Product</th>
-                <th className="px-3 py-3 text-[10px] font-semibold text-text-muted uppercase tracking-wider">Type</th>
-                {thBtn('revenue', 'Revenue')}
-                {thBtn('sales', 'Sales')}
-                {thBtn('avgSession', 'Avg Session')}
-                {thBtn('avgPlaytime', 'Avg Playtime')}
-                {thBtn('repeat', 'Repeat %')}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((p, i) => (
-                <tr key={p.productId} className={`border-b border-white/[0.02] transition-colors hover:bg-white/[0.015] ${i === sorted.length - 1 ? 'border-b-0' : ''}`}>
-                  <td className="px-6 sm:px-7 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden">
-                        {p.iconUrl ? <img src={p.iconUrl} alt={p.productName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package size={12} className="text-text-muted" /></div>}
-                      </div>
-                      <span className="text-white text-[13px] font-medium truncate">{p.productName}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3.5">
-                    <span className={`inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-pill ${p.productType === 'gamepass' ? 'bg-purple-500/10 text-purple-400' : 'bg-accent/10 text-accent-light'}`}>
-                      {p.productType === 'gamepass' ? 'Gamepass' : 'DevProduct'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default tabular-nums" title={formatRobuxFull(p.revenue, currencyMode)}>{formatRobux(p.revenue, currencyMode)}</span></td>
-                  <td className="px-3 py-3.5 text-right"><span className="text-text-secondary text-[13px] font-medium cursor-default tabular-nums" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span></td>
-                  <td className="px-3 py-3.5 text-right">
-                    <span className="text-text-secondary text-[12px] font-medium cursor-default" title={formatMinutesFull(p.avgSessionMin)}>
-                      {formatMinutes(p.avgSessionMin)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3.5 text-right">
-                    <span className="text-text-secondary text-[12px] font-medium cursor-default" title={formatMinutesFull(p.avgTotalPlaytimeMin)}>
-                      {formatMinutes(p.avgTotalPlaytimeMin)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3.5 text-right pr-6 sm:pr-7">
-                    {p.repeatSpenderRate !== null ? (
-                      <span className={`text-[12px] font-semibold cursor-default ${p.repeatSpenderRate >= 50 ? 'text-status-success' : p.repeatSpenderRate >= 25 ? 'text-yellow-400' : 'text-text-secondary'}`} title={`${p.repeatSpenderRate}% of buyers purchased again`}>
-                        {p.repeatSpenderRate}%
+
+        <div>
+          {sorted.map((p, i) => (
+            <div
+              key={p.productId}
+              className={`flex items-center gap-4 px-6 sm:px-7 py-4 transition-colors hover:bg-white/[0.015] ${i < sorted.length - 1 ? 'border-b border-white/[0.02]' : ''}`}
+            >
+              {/* Left: product info */}
+              <div className="w-10 h-10 shrink-0 rounded-btn bg-bg-elevated overflow-hidden">
+                {p.iconUrl
+                  ? <img src={p.iconUrl} alt={p.productName} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center"><Package size={16} className="text-text-muted" /></div>
+                }
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-[13px] font-medium truncate">{p.productName}</p>
+                <span className={`inline-flex mt-0.5 px-1.5 py-px text-[9px] font-semibold rounded-pill ${p.productType === 'gamepass' ? 'bg-purple-500/10 text-purple-400' : 'bg-accent/10 text-accent-light'}`}>
+                  {p.productType === 'gamepass' ? 'Gamepass' : 'DevProduct'}
+                </span>
+              </div>
+
+              {/* Right: hero metric + secondary */}
+              <div className="text-right shrink-0">
+                <p
+                  className="text-white text-[16px] font-bold tabular-nums leading-tight cursor-default"
+                  title={formatHeroValueFull(p, sortField, currencyMode)}
+                >
+                  {formatHeroValue(p, sortField, currencyMode)}
+                </p>
+                <p className="text-text-muted text-[10px] font-medium mt-0.5">
+                  {sortField !== 'revenue' ? (
+                    <span>
+                      <span className="text-text-secondary cursor-default" title={formatRobuxFull(p.revenue, currencyMode)}>
+                        {formatRobux(p.revenue, currencyMode)}
                       </span>
-                    ) : (
-                      <span className="text-text-muted text-[12px]">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <span className="mx-1 text-white/10">·</span>
+                      {METRIC_LABELS[sortField]}
+                    </span>
+                  ) : (
+                    <span>
+                      <span className="text-text-secondary cursor-default" title={`${p.sales.toLocaleString()} sales`}>
+                        {p.sales.toLocaleString()} sales
+                      </span>
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
+
         <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>

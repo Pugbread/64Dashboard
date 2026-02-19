@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useProductBreakdown, ProductEntry } from '../hooks/useProductBreakdown';
 import { useProductFlows } from '../hooks/useProductFlows';
-import { ProductTowers, ProductTable, ProductFlows, ProductSort, SortDir, getProductValue } from '../components/ProductBreakdown';
+import { ProductTowers, ProductList, ProductFlows, ProductSort, SortDir, getProductValue } from '../components/ProductBreakdown';
 import Dropdown from '../components/Dropdown';
-import { Package } from 'lucide-react';
+import { Package, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
 
 const RANGE_OPTIONS = [
   { value: '1h', label: '1 Hour' },
@@ -12,6 +12,14 @@ const RANGE_OPTIONS = [
   { value: '3d', label: '3 Days' },
   { value: '7d', label: '7 Days' },
   { value: '30d', label: '30 Days' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'revenue', label: 'Revenue' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'avgSession', label: 'Avg Session' },
+  { value: 'avgPlaytime', label: 'Avg Playtime' },
+  { value: 'repeat', label: 'Repeat %' },
 ];
 
 interface Props {
@@ -26,20 +34,11 @@ export default function ProductsPage({ selectedGameId }: Props) {
   const { data, loading } = useProductBreakdown(selectedGameId, range, page);
   const { data: flowsData, loading: flowsLoading } = useProductFlows(selectedGameId, range);
 
-  const handleSortChange = (field: ProductSort) => {
-    if (field === sortField) {
-      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
-    } else {
-      setSortField(field);
-      setSortDir('desc');
-    }
-  };
-
-  const [top5, setTop5] = useState<ProductEntry[]>([]);
+  const [top10, setTop10] = useState<ProductEntry[]>([]);
 
   useEffect(() => {
     if (data && page === 1 && data.products.length > 0) {
-      setTop5([...data.products].sort((a, b) => b.revenue - a.revenue).slice(0, 10));
+      setTop10([...data.products].sort((a, b) => b.revenue - a.revenue).slice(0, 10));
     }
   }, [data, page]);
 
@@ -59,12 +58,12 @@ export default function ProductsPage({ selectedGameId }: Props) {
     );
   }
 
-  const sortedTower = [...top5].sort((a, b) => {
+  const sortedTower = [...top10].sort((a, b) => {
     const diff = getProductValue(b, sortField) - getProductValue(a, sortField);
     return sortDir === 'asc' ? -diff : diff;
   });
   const totalPages = data?.totalPages ?? 1;
-  const hasData = (data && data.products.length > 0) || top5.length > 0;
+  const hasData = (data && data.products.length > 0) || top10.length > 0;
 
   return (
     <div className="space-y-6">
@@ -73,6 +72,21 @@ export default function ProductsPage({ selectedGameId }: Props) {
         <p className="text-text-muted text-[13px] mt-1">Product breakdown and analytics</p>
         <div className="flex flex-wrap items-center gap-2.5 mt-5">
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={setRange} />
+          <Dropdown
+            value={sortField}
+            options={SORT_OPTIONS}
+            onChange={(v) => { setSortField(v as ProductSort); setSortDir('desc'); }}
+          />
+          <button
+            onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}
+            className="flex items-center justify-center w-9 h-9 rounded-btn bg-bg-card border border-white/[0.04] text-text-secondary hover:text-white transition-colors"
+            title={sortDir === 'desc' ? 'Highest first' : 'Lowest first'}
+          >
+            {sortDir === 'desc'
+              ? <ArrowDownNarrowWide size={15} />
+              : <ArrowUpNarrowWide size={15} />
+            }
+          </button>
         </div>
       </div>
 
@@ -98,11 +112,10 @@ export default function ProductsPage({ selectedGameId }: Props) {
           />
           {sortedTower.length > 0 && <ProductTowers products={sortedTower} sortField={sortField} />}
           {data && data.products.length > 0 && (
-            <ProductTable
+            <ProductList
               products={data.products}
               sortField={sortField}
               sortDir={sortDir}
-              onSortChange={handleSortChange}
               page={page}
               totalPages={totalPages}
               onPageChange={setPage}
