@@ -55,7 +55,6 @@ export default function UsersPage({ selectedGameId }: Props) {
 
   const { data, loading } = useUsers(selectedGameId, page, search, verifiedOnly, sort);
 
-  // Debounce search
   useEffect(() => {
     const timeout = setTimeout(() => {
       setSearch(searchInput);
@@ -64,18 +63,17 @@ export default function UsersPage({ selectedGameId }: Props) {
     return () => clearTimeout(timeout);
   }, [searchInput]);
 
-  // Reset page when filters change
   useEffect(() => { setPage(1); }, [selectedGameId, verifiedOnly, sort]);
 
   if (!selectedGameId) {
     return (
-      <div className="space-y-7">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Users</h1>
-          <p className="text-text-secondary text-[13px] mt-1">Player index</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Users</h1>
+          <p className="text-text-muted text-[13px] mt-1">Player index and analytics</p>
         </div>
         <div className="card p-16 text-center">
-          <div className="relative z-10 text-text-secondary text-sm">Select a game to view users</div>
+          <div className="relative z-10 text-text-muted text-sm font-medium">Select a game to view users</div>
         </div>
       </div>
     );
@@ -98,16 +96,14 @@ export default function UsersPage({ selectedGameId }: Props) {
   );
 
   return (
-    <div className="space-y-7">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Users</h1>
-        <p className="text-text-secondary text-[13px] mt-1">Player index</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Users</h1>
+        <p className="text-text-muted text-[13px] mt-1">Player index and analytics</p>
       </div>
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        {/* Search */}
         <div className="relative flex-1 max-w-sm w-full">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           <input
@@ -115,25 +111,23 @@ export default function UsersPage({ selectedGameId }: Props) {
             placeholder="Search by username or player ID..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full bg-bg-card border border-border rounded-btn pl-9 pr-4 py-2.5 text-white text-[13px] placeholder:text-text-muted focus:outline-none focus:border-accent/40 transition-colors"
+            className="w-full bg-bg-card border border-border rounded-btn pl-9 pr-4 py-2.5 text-white text-[13px] placeholder:text-text-muted focus:outline-none focus:border-accent/40 focus:ring-2 focus:ring-accent/10 transition-all duration-200"
           />
         </div>
 
-        {/* Verified filter */}
         <button
           onClick={() => setVerifiedOnly(!verifiedOnly)}
           className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-btn text-[13px] font-medium transition-all duration-200 border ${
             verifiedOnly
-              ? 'bg-accent/10 border-accent/30 text-accent shadow-glow'
-              : 'bg-bg-card border-border text-text-secondary hover:text-white hover:border-border'
+              ? 'bg-accent/[0.08] border-accent/25 text-accent'
+              : 'bg-bg-card border-border text-text-secondary hover:text-white hover:border-white/10'
           }`}
         >
           <BadgeCheck size={15} />
           Verified only
         </button>
 
-        {/* Total count */}
-        <span className="text-text-muted text-[12px] font-medium ml-auto">
+        <span className="text-text-muted text-[12px] font-medium ml-auto tabular-nums">
           {total.toLocaleString()} user{total !== 1 ? 's' : ''}
         </span>
       </div>
@@ -141,7 +135,6 @@ export default function UsersPage({ selectedGameId }: Props) {
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="relative z-10">
-          {/* Sort header */}
           <div className="px-6 sm:px-7 pt-5 pb-3 flex items-center gap-6">
             <span className="text-[10px] text-text-muted font-medium uppercase tracking-wider mr-1">Sort by:</span>
             {sortBtn('playtime', 'Playtime')}
@@ -203,7 +196,7 @@ export default function UsersPage({ selectedGameId }: Props) {
                           </span>
                         </td>
                         <td className="hidden sm:table-cell px-4 py-3.5 text-right">
-                          <span className="text-text-secondary text-[13px] font-medium">{u.joins.toLocaleString()}</span>
+                          <span className="text-text-secondary text-[13px] font-medium tabular-nums">{u.joins.toLocaleString()}</span>
                         </td>
                         <td className="hidden sm:table-cell px-4 py-3.5 text-right pr-6 sm:pr-7">
                           <span className="text-text-muted text-[12px]" title={new Date(u.lastSeen).toLocaleString()}>
@@ -216,7 +209,6 @@ export default function UsersPage({ selectedGameId }: Props) {
                 </table>
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 sm:px-7 py-3 border-t border-border">
                   <button
@@ -226,7 +218,7 @@ export default function UsersPage({ selectedGameId }: Props) {
                   >
                     <ChevronLeft size={14} /> Prev
                   </button>
-                  <span className="text-[11px] text-text-muted">
+                  <span className="text-[11px] text-text-muted tabular-nums">
                     Page {page} of {totalPages}
                   </span>
                   <button

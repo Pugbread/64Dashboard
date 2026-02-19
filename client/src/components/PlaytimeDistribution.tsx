@@ -43,20 +43,18 @@ function formatDurationFull(seconds: number): string {
   return parts.join(' ');
 }
 
-/* ─── Percentile bar row ─── */
-
 function PercentileBar({ label, value, maxValue, color }: { label: string; value: number; maxValue: number; color: string }) {
   const pct = maxValue > 0 ? Math.max((value / maxValue) * 100, 2) : 0;
   return (
     <div className="flex items-center gap-3">
       <span className="text-text-muted text-[11px] font-mono font-semibold w-8 text-right shrink-0">{label}</span>
-      <div className="flex-1 h-5 bg-bg-elevated rounded-[2px] overflow-hidden relative">
+      <div className="flex-1 h-6 bg-bg-elevated rounded-[4px] overflow-hidden relative">
         <div
-          className="h-full rounded-[2px] transition-all duration-700 ease-out"
+          className="h-full rounded-[4px] transition-all duration-700 ease-out"
           style={{ width: `${pct}%`, background: color }}
         />
         <span
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/80 cursor-default"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/80 cursor-default"
           title={formatDurationFull(value)}
         >
           {formatDuration(value)}
@@ -65,8 +63,6 @@ function PercentileBar({ label, value, maxValue, color }: { label: string; value
     </div>
   );
 }
-
-/* ─── Lorenz curve tooltip ─── */
 
 function LorenzTooltip({ active, payload }: any) {
   if (!active || !payload?.[0]) return null;
@@ -83,11 +79,9 @@ function LorenzTooltip({ active, payload }: any) {
   );
 }
 
-/* ─── Insight pill ─── */
-
 function Insight({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
   return (
-    <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-btn bg-bg-elevated border border-border">
+    <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-btn bg-bg-elevated/80 border border-border">
       <div className={`shrink-0 ${accent ? 'text-accent' : 'text-text-muted'}`}>{icon}</div>
       <div className="min-w-0">
         <p className="text-text-muted text-[9px] font-semibold uppercase tracking-wider">{label}</p>
@@ -97,8 +91,6 @@ function Insight({ icon, label, value, accent }: { icon: React.ReactNode; label:
   );
 }
 
-/* ─── Main component ─── */
-
 export default function PlaytimeDistribution({ gameId, range }: Props) {
   const { data, loading } = usePlaytimeDistribution(gameId, range);
 
@@ -106,9 +98,9 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
 
   if (loading) {
     return (
-      <div className="card p-6 sm:p-7 col-span-1 xl:col-span-2">
+      <div className="card p-6 col-span-1 xl:col-span-2">
         <div className="relative z-10 h-[300px] flex items-center justify-center">
-          <div className="w-full max-w-md h-4 bg-bg-elevated rounded-[2px] animate-pulse" />
+          <div className="w-full max-w-md h-4 bg-bg-elevated rounded-btn animate-pulse" />
         </div>
       </div>
     );
@@ -118,7 +110,7 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
     return (
       <div className="card p-10 text-center col-span-1 xl:col-span-2">
         <div className="relative z-10">
-          <BarChart3 size={28} className="mx-auto mb-3 text-text-muted" />
+          <BarChart3 size={24} className="mx-auto mb-3 text-text-muted" />
           <p className="text-text-secondary text-sm font-medium">No playtime data in this period</p>
         </div>
       </div>
@@ -128,32 +120,29 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
   const { percentiles, curve, totalPlayers, totalPlaytimeSeconds, topTenPercent, topOnePercent } = data;
   const maxPerc = percentiles.p99;
 
-  // Color gradient for bars (light → vibrant)
   const barColors = [
-    'rgba(59,130,246,0.25)',  // P10
-    'rgba(59,130,246,0.35)',  // P25
-    'rgba(59,130,246,0.50)',  // P50
-    'rgba(59,130,246,0.65)',  // P75
-    'rgba(59,130,246,0.80)',  // P90
-    'rgba(59,130,246,1.0)',   // P99
+    'rgba(59,130,246,0.20)',
+    'rgba(59,130,246,0.30)',
+    'rgba(59,130,246,0.42)',
+    'rgba(59,130,246,0.55)',
+    'rgba(59,130,246,0.70)',
+    'rgba(59,130,246,0.90)',
   ];
 
   return (
-    <div className="card p-6 sm:p-7 col-span-1 xl:col-span-2">
+    <div className="card p-6 col-span-1 xl:col-span-2">
       <div className="relative z-10">
-        {/* Header */}
         <div className="flex items-center gap-2.5 mb-1">
-          <TrendingUp size={16} className="text-accent" />
-          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
+          <TrendingUp size={15} className="text-accent" />
+          <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">
             Playtime Distribution
           </p>
         </div>
-        <p className="text-text-muted text-[10px] mb-6">
+        <p className="text-text-muted text-[10px] mb-5">
           How playtime is spread across your player base
         </p>
 
-        {/* Key insights */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
           <Insight
             icon={<Users size={14} />}
             label="Players"
@@ -179,7 +168,6 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Lorenz curve */}
           <div>
             <p className="text-text-muted text-[10px] font-semibold uppercase tracking-wider mb-3">
               Concentration Curve
@@ -189,30 +177,29 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
                 <AreaChart data={curve} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <defs>
                     <linearGradient id="lorenzFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3} />
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.25} />
                       <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
                   <XAxis
                     dataKey="playerPct"
                     tick={{ fontSize: 10, fill: '#94A3B8' }}
                     tickFormatter={(v: number) => `${v}%`}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.05)' }}
                     tickLine={false}
                   />
                   <YAxis
                     tick={{ fontSize: 10, fill: '#94A3B8' }}
                     tickFormatter={(v: number) => `${v}%`}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.05)' }}
                     tickLine={false}
                     domain={[0, 100]}
                   />
                   <Tooltip content={<LorenzTooltip />} />
-                  {/* Perfect equality reference line */}
                   <ReferenceLine
                     segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]}
-                    stroke="rgba(255,255,255,0.1)"
+                    stroke="rgba(255,255,255,0.08)"
                     strokeDasharray="4 4"
                     strokeWidth={1}
                   />
@@ -223,7 +210,7 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
                     strokeWidth={2}
                     fill="url(#lorenzFill)"
                     dot={false}
-                    activeDot={{ r: 4, fill: '#3B82F6', stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: '#3B82F6', stroke: '#f8fafc', strokeWidth: 2 }}
                     isAnimationActive={!isMobile}
                   />
                 </AreaChart>
@@ -234,12 +221,11 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
             </p>
           </div>
 
-          {/* Percentile bars */}
           <div>
             <p className="text-text-muted text-[10px] font-semibold uppercase tracking-wider mb-3">
               Percentile Playtime
             </p>
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <PercentileBar label="P10" value={percentiles.p10} maxValue={maxPerc} color={barColors[0]} />
               <PercentileBar label="P25" value={percentiles.p25} maxValue={maxPerc} color={barColors[1]} />
               <PercentileBar label="P50" value={percentiles.p50} maxValue={maxPerc} color={barColors[2]} />
@@ -247,7 +233,7 @@ export default function PlaytimeDistribution({ gameId, range }: Props) {
               <PercentileBar label="P90" value={percentiles.p90} maxValue={maxPerc} color={barColors[4]} />
               <PercentileBar label="P99" value={percentiles.p99} maxValue={maxPerc} color={barColors[5]} />
             </div>
-            <div className="mt-5 pt-4 border-t border-border/50">
+            <div className="mt-4 pt-3 border-t border-border/50">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-text-muted">Total Playtime</span>
                 <span className="text-white font-semibold cursor-default" title={formatDurationFull(totalPlaytimeSeconds)}>

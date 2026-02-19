@@ -22,10 +22,10 @@ export default function AddGameModal({ onAdd, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="card w-full sm:max-w-md p-6 sm:p-8 shadow-card-hover rounded-b-none sm:rounded-b-card">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="card w-full sm:max-w-md p-6 sm:p-7 shadow-card-hover rounded-b-none sm:rounded-b-card">
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-7">
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-white">Add Game</h2>
             <button
               onClick={onClose}
@@ -35,7 +35,7 @@ export default function AddGameModal({ onAdd, onClose }: Props) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-wider">Game Name *</label>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Roblox Game" className="input-field" autoFocus />
@@ -49,8 +49,8 @@ export default function AddGameModal({ onAdd, onClose }: Props) {
               <label className="block text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-wider">Icon URL</label>
               <input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="Leave blank to auto-fetch" className="input-field" />
             </div>
-            <div className="flex justify-end gap-3 pt-3">
-              <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-btn text-sm text-text-secondary hover:text-white transition-colors">Cancel</button>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-btn text-sm text-text-secondary hover:text-white transition-colors font-medium">Cancel</button>
               <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50">{loading ? 'Adding...' : 'Add Game'}</button>
             </div>
           </form>

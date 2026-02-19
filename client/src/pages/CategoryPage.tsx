@@ -50,6 +50,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   retention: 'Retention',
 };
 
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  engagement: 'Track player activity and session metrics',
+  revenue: 'Monitor earnings and purchase patterns',
+  retention: 'Analyze player return rates over time',
+};
+
 function getAvailableIntervals(range: string) {
   return Object.entries(INTERVAL_AVAILABILITY)
     .filter(([, ranges]) => ranges.includes(range))
@@ -102,28 +108,27 @@ function downsample(arr: number[], maxPoints: number): number[] {
 
 function MiniCcuSparkline({ points }: { points: number[] }) {
   if (points.length < 2) {
-    return <div className="h-12 rounded-btn bg-white/[0.02]" />;
+    return <div className="h-14 rounded-btn bg-white/[0.02]" />;
   }
 
-  // Cap at 60 points to keep SVG lightweight on mobile
   const sampled = downsample(points, 60);
   const data = sampled.map((value, i) => ({ x: i, value }));
 
   return (
-    <div className="h-12">
+    <div className="h-14">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="ccuAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(96,165,250,0.4)" />
-              <stop offset="100%" stopColor="rgba(96,165,250,0.03)" />
+              <stop offset="0%" stopColor="rgba(96,165,250,0.35)" />
+              <stop offset="100%" stopColor="rgba(96,165,250,0.02)" />
             </linearGradient>
           </defs>
           <Area
             type="monotone"
             dataKey="value"
-            stroke="rgba(96,165,250,0.98)"
-            strokeWidth={2.2}
+            stroke="rgba(96,165,250,0.9)"
+            strokeWidth={2}
             fill="url(#ccuAreaGradient)"
             isAnimationActive={false}
             dot={false}
@@ -142,7 +147,6 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
   const { ccu, history, allTimeHigh, allTimeHighAt } = useCCU(category === 'engagement' ? selectedGameId : null);
   const animatedCcu = useAnimatedNumber(ccu);
 
-  // Get providers for this category from meta
   const providers: ProviderMeta[] = meta
     ? meta.providers.filter((p) => p.category === category)
     : [];
@@ -151,7 +155,6 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
     ? providers.filter((p) => p.id !== 'revenue' && p.id !== 'purchases')
     : providers;
 
-  // Reset range and interval to correct defaults when switching categories
   useEffect(() => {
     if (category === 'retention') {
       setRange('7d' as Range);
@@ -162,7 +165,6 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
     }
   }, [category]);
 
-  // Keep interval valid when range changes (non-retention only)
   useEffect(() => {
     if (category === 'retention') return;
     const available = getAvailableIntervals(range);
@@ -172,14 +174,16 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
   }, [range, category, interval]);
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">
+        <h1 className="text-2xl font-bold text-white tracking-tight">
           {CATEGORY_LABELS[category] || category}
         </h1>
-        <p className="text-text-secondary text-[13px] mt-1">Analytics overview</p>
-        <div className="flex flex-wrap items-center gap-3 mt-4">
+        <p className="text-text-muted text-[13px] mt-1">
+          {CATEGORY_DESCRIPTIONS[category] || 'Analytics overview'}
+        </p>
+        <div className="flex flex-wrap items-center gap-2.5 mt-5">
           {category === 'retention' ? (
             <Dropdown value={range} options={RETENTION_RANGE_OPTIONS} onChange={(v) => setRange(v as Range)} />
           ) : (
@@ -193,22 +197,25 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
 
       {/* CCU cards */}
       {category === 'engagement' && ccu !== null && (
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-4">
           <div className="card p-5">
             <div className="relative z-10">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-btn bg-accent-muted flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-btn bg-accent/[0.08] flex items-center justify-center border border-accent/15">
                     <Users size={16} className="text-accent" />
                   </div>
                   <div>
-                    <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">CCU</p>
+                    <p className="text-text-muted text-[10px] font-semibold uppercase tracking-wider">Concurrent Users</p>
                     <p className="text-white text-2xl font-bold tracking-tight">{animatedCcu.toLocaleString()}</p>
                   </div>
                 </div>
-                <div className="w-2 h-2 rounded-full bg-accent animate-pulse ml-1" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-status-success animate-pulse-soft" />
+                  <span className="text-status-success text-[10px] font-semibold">LIVE</span>
+                </div>
               </div>
-              <div className="mt-3">
+              <div className="mt-4">
                 <MiniCcuSparkline points={history} />
               </div>
             </div>
@@ -216,16 +223,16 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
           <div className="card p-5 min-h-[118px]">
             <div className="relative z-10 h-full flex flex-col">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-btn bg-yellow-500/10 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-btn bg-yellow-500/[0.08] flex items-center justify-center border border-yellow-500/15">
                   <Trophy size={16} className="text-yellow-400" />
                 </div>
-                <p className="text-text-secondary text-[11px] font-semibold uppercase tracking-wider">All Time High</p>
+                <p className="text-text-muted text-[10px] font-semibold uppercase tracking-wider">All Time High</p>
               </div>
-              <p className="text-white text-[40px] leading-none font-extrabold tracking-tight mt-2">
+              <p className="text-white text-[36px] leading-none font-extrabold tracking-tight mt-3">
                 {allTimeHigh.toLocaleString()}
               </p>
-              <div className="mt-auto pt-2 text-center">
-                <p className="text-text-muted text-[10px] font-medium">
+              <div className="mt-auto pt-2">
+                <p className="text-text-muted text-[10px] font-medium text-center">
                   {allTimeHighAt ? new Date(allTimeHighAt).toLocaleDateString() : 'No ATH yet'}
                 </p>
               </div>
@@ -234,18 +241,20 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
         </div>
       )}
 
-      {/* Charts — each loads independently */}
+      {/* Charts */}
       {!selectedGameId ? (
         <div className="card p-16 text-center">
-          <div className="relative z-10 text-text-secondary text-sm">Select a game to view analytics</div>
+          <div className="relative z-10">
+            <p className="text-text-muted text-sm font-medium">Select a game to view analytics</p>
+          </div>
         </div>
       ) : providers.length === 0 ? (
         <div className="card p-16 text-center">
-          <div className="relative z-10 text-text-secondary text-sm">No providers for this category</div>
+          <div className="relative z-10 text-text-muted text-sm">No providers for this category</div>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {isRevenueCategory && (
               <RevenueComboChart
                 gameId={selectedGameId}
@@ -265,7 +274,6 @@ export default function CategoryPage({ category, selectedGameId }: CategoryPageP
             ))}
           </div>
 
-          {/* Playtime distribution for engagement */}
           {category === 'engagement' && selectedGameId && (
             <PlaytimeDistribution gameId={selectedGameId} range={range} />
           )}

@@ -113,11 +113,11 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
 
   if (loading) {
     return (
-      <div className="card p-7 xl:col-span-2 animate-pulse">
+      <div className="card p-6 xl:col-span-2 animate-pulse">
         <div className="relative z-10">
-          <div className="h-3 w-36 bg-white/5 rounded mb-3" />
-          <div className="h-7 w-56 bg-white/5 rounded mb-6" />
-          <div className="h-56 bg-white/[0.02] rounded" />
+          <div className="h-3 w-32 bg-white/[0.04] rounded-btn mb-3" />
+          <div className="h-8 w-48 bg-white/[0.04] rounded-btn mb-5" />
+          <div className="h-56 bg-white/[0.02] rounded-btn" />
         </div>
       </div>
     );
@@ -125,12 +125,12 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
 
   if (error) {
     return (
-      <div className="card p-7 xl:col-span-2">
+      <div className="card p-6 xl:col-span-2">
         <div className="relative z-10">
           <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider mb-2">Revenue & Purchases</p>
-          <div className="flex items-center gap-2 text-status-danger/70 mt-4">
+          <div className="flex items-center gap-2 text-status-danger/80 mt-4">
             <AlertTriangle size={14} />
-            <span className="text-[12px]">Failed to load data</span>
+            <span className="text-[12px] font-medium">Failed to load data</span>
           </div>
         </div>
       </div>
@@ -139,10 +139,10 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
 
   if (chartData.length === 0) {
     return (
-      <div className="card p-7 xl:col-span-2">
+      <div className="card p-6 xl:col-span-2">
         <div className="relative z-10">
-          <p className="text-[12px] text-text-secondary font-medium mb-6">Revenue & Purchases</p>
-          <div className="h-56 flex items-center justify-center text-text-muted text-sm">
+          <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider mb-6">Revenue & Purchases</p>
+          <div className="h-56 flex items-center justify-center text-text-muted text-sm font-medium">
             No data available
           </div>
         </div>
@@ -151,14 +151,14 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
   }
 
   return (
-    <div className="card card-hover p-7 xl:col-span-2">
+    <div className="card card-hover p-6 xl:col-span-2">
       <div className="relative z-10">
-        <p className="text-[12px] text-text-secondary font-medium mb-1">Revenue & Purchases</p>
-        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 mb-6">
-          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total revenue: ${formatCurrency(totalRevenue, currencyMode, true)}`}>
+        <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider mb-1">Revenue & Purchases</p>
+        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 mb-5">
+          <p className="text-[22px] sm:text-[26px] font-bold text-white tracking-tight leading-none" title={`Total revenue: ${formatCurrency(totalRevenue, currencyMode, true)}`}>
             {formatCurrency(totalRevenue, currencyMode, false)}
           </p>
-          <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none" title={`Total purchases: ${totalPurchases.toLocaleString()}`}>
+          <p className="text-[13px] sm:text-[15px] font-semibold text-text-secondary tracking-tight leading-none" title={`Total purchases: ${totalPurchases.toLocaleString()}`}>
             {totalPurchases.toLocaleString()} purchases
           </p>
         </div>
@@ -168,16 +168,16 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
             <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
               <defs>
                 <linearGradient id="rev-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4ADE80" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#4ADE80" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#34D399" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#34D399" stopOpacity={0} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(d) => formatTick(d, interval)}
-                tick={{ fill: '#64748B', fontSize: 10 }}
+                tick={{ fill: '#525866', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
@@ -185,7 +185,7 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
               />
               <YAxis
                 yAxisId="revenue"
-                tick={{ fill: '#64748B', fontSize: 10 }}
+                tick={{ fill: '#525866', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => formatCurrency(Number(v), currencyMode, false)}
@@ -193,16 +193,16 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
               <YAxis
                 yAxisId="purchases"
                 orientation="right"
-                tick={{ fill: '#64748B', fontSize: 10 }}
+                tick={{ fill: '#525866', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#121214',
-                  border: '1px solid #1E1E22',
-                  borderRadius: '4px',
-                  color: '#fff',
+                  backgroundColor: '#111114',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                  color: '#f8fafc',
                   fontSize: '12px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   padding: '10px 14px',
@@ -220,14 +220,14 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                 type="monotone"
                 dataKey="revenue"
                 name="Revenue"
-                stroke="#4ADE80"
+                stroke="#34D399"
                 strokeWidth={2}
                 fill="url(#rev-fill)"
                 dot={false}
                 activeDot={{
                   r: 4,
-                  fill: '#4ADE80',
-                  stroke: '#080808',
+                  fill: '#34D399',
+                  stroke: '#09090b',
                   strokeWidth: 2,
                 }}
                 isAnimationActive={!isMobile}
@@ -240,7 +240,7 @@ export default function RevenueComboChart({ gameId, range, interval }: RevenueCo
                 stroke="#60A5FA"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, fill: '#60A5FA', stroke: '#080808', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: '#60A5FA', stroke: '#09090b', strokeWidth: 2 }}
                 isAnimationActive={!isMobile}
               />
             </ComposedChart>

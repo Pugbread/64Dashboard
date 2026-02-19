@@ -21,7 +21,7 @@ interface TimeSeriesChartProps {
 
 const CATEGORY_COLORS: Record<string, string> = {
   engagement: '#3B82F6',
-  revenue: '#4ADE80',
+  revenue: '#34D399',
   retention: '#F59E0B',
 };
 
@@ -56,18 +56,6 @@ type ChartPoint = {
   estimate: number | null;
 };
 
-/**
- * Build chart data with split solid/partial/estimate series.
- *
- * - `solid`: completed data points
- * - `partial`: dashed segment for accumulating data (bridge + partial points)
- * - `estimate`: blue dotted line from the partial value to the projected value
- *
- * The estimate line goes from the partial point's actual value to the projected
- * value, both at the SAME x-coordinate. To draw this as a visible line segment,
- * we put the estimate start on the second-to-last point (at the bridge or
- * second-to-last partial), and the estimate end on the last partial point.
- */
 function buildChartData(data: TimeSeriesPoint[], projection?: TimeSeriesResult['projection']): ChartPoint[] {
   const hasPartial = data.some((p) => p.partial);
   let base: ChartPoint[] = hasPartial
@@ -83,15 +71,11 @@ function buildChartData(data: TimeSeriesPoint[], projection?: TimeSeriesResult['
 
   if (!projection) return base;
 
-  // Find the partial point where the projection sits
   const atIdx = base.findIndex((p) => p.date === projection.atDate);
   if (atIdx < 0) return base;
 
-  // Set estimate on the projection point to the estimated value
   base[atIdx] = { ...base[atIdx], estimate: projection.value };
 
-  // Also set estimate on the previous point so the line has a visible segment
-  // (from previous point's actual value → projection point's estimated value)
   if (atIdx > 0) {
     const prev = base[atIdx - 1];
     base[atIdx - 1] = { ...prev, estimate: prev.partial ?? prev.solid };
@@ -131,10 +115,10 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
 
   if (result.data.length === 0) {
     return (
-      <div className="card p-7">
+      <div className="card p-6">
         <div className="relative z-10">
-          <p className="text-[12px] text-text-secondary font-medium mb-6">{provider.name}</p>
-          <div className="h-52 flex items-center justify-center text-text-muted text-sm">
+          <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider mb-6">{provider.name}</p>
+          <div className="h-52 flex items-center justify-center text-text-muted text-sm font-medium">
             No data available
           </div>
         </div>
@@ -152,20 +136,20 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
   const isRevenue = provider.id === 'revenue';
 
   return (
-    <div className="card card-hover p-7">
+    <div className="card card-hover p-6">
       <div className="relative z-10">
-        <p className="text-[12px] text-text-secondary font-medium mb-1">{provider.name}</p>
+        <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider mb-1">{provider.name}</p>
         {isRevenue ? (
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-6">
-            <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none" title={`Total: ${formatValueFull(total, provider.format)}`}>
-              Total: {formatValue(total, provider.format)}
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-5">
+            <p className="text-[22px] sm:text-[26px] font-bold text-white tracking-tight leading-none" title={`Total: ${formatValueFull(total, provider.format)}`}>
+              {formatValue(total, provider.format)}
             </p>
-            <p className="text-[14px] sm:text-[16px] font-semibold text-text-secondary tracking-tight leading-none" title={`Average: ${formatValueFull(avg, provider.format)}`}>
-              Average: {formatValue(avg, provider.format)}
+            <p className="text-[13px] sm:text-[15px] font-semibold text-text-secondary tracking-tight leading-none" title={`Average: ${formatValueFull(avg, provider.format)}`}>
+              avg {formatValue(avg, provider.format)}
             </p>
           </div>
         ) : (
-          <p className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight leading-none mb-6" title={formatValueFull(avg, provider.format)}>
+          <p className="text-[22px] sm:text-[26px] font-bold text-white tracking-tight leading-none mb-5" title={formatValueFull(avg, provider.format)}>
             {displayValue}
           </p>
         )}
@@ -174,26 +158,26 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
             <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
               <defs>
                 <linearGradient id={`g-${provider.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="0%" stopColor={color} stopOpacity={0.20} />
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id={`g-${provider.id}-partial`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.10} />
+                  <stop offset="0%" stopColor={color} stopOpacity={0.08} />
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(d) => formatTick(d, interval)}
-                tick={{ fill: '#64748B', fontSize: 10 }}
+                tick={{ fill: '#525866', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
                 minTickGap={40}
               />
               <YAxis
-                tick={{ fill: '#64748B', fontSize: 10 }}
+                tick={{ fill: '#525866', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 domain={[0, yMax > 0 ? yMax * 1.15 : 1]}
@@ -205,10 +189,10 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#121214',
-                  border: '1px solid #1E1E22',
-                  borderRadius: '4px',
-                  color: '#fff',
+                  backgroundColor: '#111114',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                  color: '#f8fafc',
                   fontSize: '12px',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   padding: '10px 14px',
@@ -216,9 +200,7 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 formatter={(value: any, name: string, props: any) => {
                   if (value === null || value === undefined) return [null, null];
                   const payload = props?.payload;
-                  // On bridge point (both solid & partial exist), skip the duplicate partial entry
                   if (name === 'partial' && payload?.solid != null) return [null, null];
-                  // Estimate: show it, but skip on bridge point where it equals the actual value
                   if (name === 'estimate') {
                     const actualVal = payload?.partial ?? payload?.solid;
                     if (actualVal != null && Math.abs(Number(actualVal) - Number(value)) < 0.05) return [null, null];
@@ -230,7 +212,6 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 labelFormatter={(label) => formatTooltipLabel(label as string, interval)}
               />
 
-              {/* Solid line — complete data */}
               <Area
                 type="monotone"
                 dataKey="solid"
@@ -238,12 +219,11 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                 strokeWidth={2}
                 fill={`url(#g-${provider.id})`}
                 dot={false}
-                activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: color, stroke: '#09090b', strokeWidth: 2 }}
                 connectNulls={false}
                 isAnimationActive={!isMobile}
               />
 
-              {/* Dashed line — partial/accumulating data */}
               {hasPartial && (
                 <Area
                   type="monotone"
@@ -254,13 +234,12 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   strokeOpacity={0.6}
                   fill={`url(#g-${provider.id}-partial)`}
                   dot={false}
-                  activeDot={{ r: 4, fill: color, stroke: '#080808', strokeWidth: 2, strokeDasharray: '' }}
+                  activeDot={{ r: 4, fill: color, stroke: '#09090b', strokeWidth: 2, strokeDasharray: '' }}
                   connectNulls={false}
                   isAnimationActive={!isMobile}
                 />
               )}
 
-              {/* Blue dotted estimate line — branches from partial to estimated value */}
               {hasProjection && (
                 <Area
                   type="monotone"
@@ -270,20 +249,19 @@ export default function TimeSeriesChart({ provider, result, interval }: TimeSeri
                   strokeDasharray="5 5"
                   fill="none"
                   dot={false}
-                  activeDot={{ r: 5, fill: '#60A5FA', stroke: '#0B1220', strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: '#60A5FA', stroke: '#09090b', strokeWidth: 2 }}
                   connectNulls
                   isAnimationActive={false}
                 />
               )}
 
-              {/* Blue dot at the estimated final value */}
               {hasProjection && result.projection && (
                 <ReferenceDot
                   x={result.projection.atDate}
                   y={result.projection.value}
                   r={5}
                   fill="#60A5FA"
-                  stroke="#0B1220"
+                  stroke="#09090b"
                   strokeWidth={2}
                   ifOverflow="extendDomain"
                 />

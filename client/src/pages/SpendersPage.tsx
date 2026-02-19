@@ -33,7 +33,6 @@ export default function SpendersPage({ selectedGameId }: Props) {
     }
   };
 
-  // Cache top 10 from page 1 for towers
   const [top5, setTop5] = useState<SpenderEntry[]>([]);
 
   useEffect(() => {
@@ -42,18 +41,17 @@ export default function SpendersPage({ selectedGameId }: Props) {
     }
   }, [data, page]);
 
-  // Reset page when range or game changes
   useEffect(() => { setPage(1); }, [selectedGameId, range]);
 
   if (!selectedGameId) {
     return (
-      <div className="space-y-7">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Top Spenders</h1>
-          <p className="text-text-secondary text-[13px] mt-1">Player spending breakdown</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Top Spenders</h1>
+          <p className="text-text-muted text-[13px] mt-1">Player spending breakdown</p>
         </div>
         <div className="card p-16 text-center">
-          <div className="relative z-10 text-text-secondary text-sm">Select a game to view spenders</div>
+          <div className="relative z-10 text-text-muted text-sm font-medium">Select a game to view spenders</div>
         </div>
       </div>
     );
@@ -67,31 +65,30 @@ export default function SpendersPage({ selectedGameId }: Props) {
   const hasData = (data && data.spenders.length > 0) || top5.length > 0;
 
   return (
-    <div className="space-y-7">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Top Spenders</h1>
-        <p className="text-text-secondary text-[13px] mt-1">Player spending breakdown</p>
-        <div className="flex flex-wrap items-center gap-3 mt-4">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Top Spenders</h1>
+        <p className="text-text-muted text-[13px] mt-1">Player spending breakdown</p>
+        <div className="flex flex-wrap items-center gap-2.5 mt-5">
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={setRange} />
         </div>
       </div>
 
       {loading && !hasData && (
-        <div className="text-text-secondary text-sm py-8 text-center">Loading spenders...</div>
+        <div className="text-text-muted text-sm py-8 text-center">Loading spenders...</div>
       )}
 
       {!loading && !hasData && (
         <div className="card p-10 text-center">
           <div className="relative z-10">
-            <Crown size={32} className="mx-auto mb-3 text-text-muted" />
+            <Crown size={28} className="mx-auto mb-3 text-text-muted" />
             <p className="text-text-secondary text-sm font-medium">No spender data in this period</p>
           </div>
         </div>
       )}
 
       {hasData && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {sortedTower.length > 0 && <SpenderTowers spenders={sortedTower} sortField={sortField} />}
           {data && data.spenders.length > 0 && (
             <SpenderTable

@@ -35,7 +35,6 @@ export default function ProductsPage({ selectedGameId }: Props) {
     }
   };
 
-  // Cache top 10 from page 1 for towers
   const [top5, setTop5] = useState<ProductEntry[]>([]);
 
   useEffect(() => {
@@ -44,18 +43,17 @@ export default function ProductsPage({ selectedGameId }: Props) {
     }
   }, [data, page]);
 
-  // Reset page when range or game changes
   useEffect(() => { setPage(1); }, [selectedGameId, range]);
 
   if (!selectedGameId) {
     return (
-      <div className="space-y-7">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Products</h1>
-          <p className="text-text-secondary text-[13px] mt-1">Product breakdown</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Products</h1>
+          <p className="text-text-muted text-[13px] mt-1">Product breakdown and analytics</p>
         </div>
         <div className="card p-16 text-center">
-          <div className="relative z-10 text-text-secondary text-sm">Select a game to view products</div>
+          <div className="relative z-10 text-text-muted text-sm font-medium">Select a game to view products</div>
         </div>
       </div>
     );
@@ -69,31 +67,30 @@ export default function ProductsPage({ selectedGameId }: Props) {
   const hasData = (data && data.products.length > 0) || top5.length > 0;
 
   return (
-    <div className="space-y-7">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Products</h1>
-        <p className="text-text-secondary text-[13px] mt-1">Product breakdown</p>
-        <div className="flex flex-wrap items-center gap-3 mt-4">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Products</h1>
+        <p className="text-text-muted text-[13px] mt-1">Product breakdown and analytics</p>
+        <div className="flex flex-wrap items-center gap-2.5 mt-5">
           <Dropdown value={range} options={RANGE_OPTIONS} onChange={setRange} />
         </div>
       </div>
 
       {loading && !hasData && (
-        <div className="text-text-secondary text-sm py-8 text-center">Loading products...</div>
+        <div className="text-text-muted text-sm py-8 text-center">Loading products...</div>
       )}
 
       {!loading && !hasData && (
         <div className="card p-10 text-center">
           <div className="relative z-10">
-            <Package size={32} className="mx-auto mb-3 text-text-muted" />
+            <Package size={28} className="mx-auto mb-3 text-text-muted" />
             <p className="text-text-secondary text-sm font-medium">No product sales in this period</p>
           </div>
         </div>
       )}
 
       {hasData && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <ProductFlows
             flows={flowsData?.flows ?? []}
             totalNewBuyers={flowsData?.totalNewBuyers ?? 0}

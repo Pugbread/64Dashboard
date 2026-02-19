@@ -40,7 +40,6 @@ export default function App() {
     }
   }, [token, handleLogout]);
 
-  // Not authenticated
   if (!token) {
     return (
       <Routes>
@@ -62,18 +61,15 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Close sidebar on route change (mobile)
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  // Persist selected game to localStorage
   const handleSelectGame = useCallback((id: string) => {
     setSelectedGameId(id);
     localStorage.setItem('selectedGameId', id);
   }, []);
 
-  // Auto-select first game if nothing saved or saved game no longer exists
   useEffect(() => {
     if (games.length === 0) return;
     const savedId = selectedGameId;
@@ -84,7 +80,10 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
   if (metaLoading || !meta) {
     return (
       <div className="min-h-screen bg-bg-primary flex items-center justify-center">
-        <p className="text-text-muted text-sm">Loading...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
+          <p className="text-text-muted text-sm">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -94,27 +93,26 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="min-h-screen bg-bg-primary relative">
-      {/* Atmospheric glow — hidden on mobile to save GPU */}
+      {/* Atmospheric glow */}
       <div className="hidden lg:block fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-12%] left-[34%] w-[760px] h-[520px] bg-accent/[0.035] rounded-full blur-[170px]" />
-        <div className="absolute bottom-[8%] right-[8%] w-[420px] h-[420px] bg-accent/[0.025] rounded-full blur-[130px]" />
+        <div className="absolute top-[-8%] left-[38%] w-[700px] h-[500px] bg-accent/[0.025] rounded-full blur-[180px]" />
+        <div className="absolute bottom-[5%] right-[10%] w-[350px] h-[350px] bg-accent/[0.015] rounded-full blur-[140px]" />
       </div>
 
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-bg-primary border-b border-border px-4 py-3 flex items-center gap-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-bg-primary/90 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => setSidebarOpen(true)}
           className="w-9 h-9 rounded-btn flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/5 transition-colors"
         >
           <Menu size={20} />
         </button>
-        <span className="text-[15px] font-bold text-white tracking-tight">64's Dash</span>
+        <span className="text-[14px] font-bold text-white tracking-tight">64 Analytics</span>
       </div>
 
-      {/* Overlay for mobile sidebar */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-[55] bg-black/70"
+          className="lg:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -128,7 +126,7 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
         mobileOpen={sidebarOpen}
         onMobileClose={() => setSidebarOpen(false)}
       />
-      <div className="lg:ml-[240px] pt-[60px] lg:pt-0 relative z-10 flex flex-col min-h-screen">
+      <div className="lg:ml-[252px] pt-[60px] lg:pt-0 relative z-10 flex flex-col min-h-screen">
         <TopBar />
         <main className="p-4 sm:p-6 lg:p-8 xl:p-10 flex-1">
           <div className="max-w-[1440px] mx-auto">

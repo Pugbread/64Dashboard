@@ -36,7 +36,6 @@ function playSaleSound(audio: HTMLAudioElement | null) {
   }
 }
 
-/* ── Formatting ── */
 function timeAgo(ts: string): string {
   const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
   if (diff < 5) return 'just now';
@@ -57,24 +56,20 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
   const prevCountRef = useRef(0);
   const saleAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Caches for resolved data (persist across renders)
   const playerCache = useRef<Map<string, { displayName: string | null; avatarUrl: string | null }>>(new Map());
   const productNameCache = useRef<Map<string, string | null>>(new Map());
   const productIconCache = useRef<Map<string, string | null>>(new Map());
 
-  // Pending resolution promises to avoid duplicate fetches
   const pendingPlayers = useRef<Set<string>>(new Set());
   const pendingProducts = useRef<Set<string>>(new Set());
   const pendingIcons = useRef<Set<string>>(new Set());
 
-  // Interval for refreshing "time ago"
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 5000);
     return () => clearInterval(id);
   }, []);
 
-  // Preload the provided Shopify sales sound.
   useEffect(() => {
     const audio = new Audio(saleSoundUrl);
     audio.preload = 'auto';
@@ -184,7 +179,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     }
   }, [authHeaders]);
 
-  // Load initial recent purchases
   const initialLoaded = useRef(false);
   useEffect(() => {
     if (!selectedGameId || initialLoaded.current) return;
@@ -216,7 +210,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
 
         setPurchases(initial);
 
-        // Resolve all players and products
         const playerIds = new Set(initial.map((p) => p.playerId));
         const productKeys = new Set(initial.map((p) => `${p.productType}:${p.productId}`));
         resolvePlayersBatch(Array.from(playerIds));
@@ -231,14 +224,12 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     })();
   }, [selectedGameId, resolvePlayersBatch, resolveProductName, resolveProductIcon]);
 
-  // Reset when game changes
   useEffect(() => {
     initialLoaded.current = false;
     setPurchases([]);
     prevCountRef.current = 0;
   }, [selectedGameId]);
 
-  // WebSocket connection
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -260,7 +251,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
           if (msg.type === 'purchase') {
             const raw: RawPurchase = msg.data;
 
-            // Check caches
             const playerData = playerCache.current.get(raw.playerId);
             const nameKey = `${raw.productType}:${raw.productId}`;
             const iconKey = nameKey;
@@ -279,7 +269,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
 
             setPurchases((prev) => [purchase, ...prev].slice(0, 200));
 
-            // Trigger async resolution
             if (!playerData) resolvePlayer(raw.playerId);
             if (resolvedName === undefined) resolveProductName(raw.productId, raw.productType);
             if (resolvedIcon === undefined) resolveProductIcon(raw.productId, raw.productType);
@@ -291,7 +280,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
 
       ws.onclose = () => {
         setConnected(false);
-        // Auto-reconnect after 3s
         reconnectTimer.current = setTimeout(connect, 3000);
       };
 
@@ -305,13 +293,12 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       if (wsRef.current) {
-        wsRef.current.onclose = null; // Prevent reconnect on unmount
+        wsRef.current.onclose = null;
         wsRef.current.close();
       }
     };
   }, [resolvePlayer, resolveProductName, resolveProductIcon]);
 
-  // Remove the "new" animation flag after a short delay
   useEffect(() => {
     if (purchases.length === 0) return;
     const newest = purchases[0];
@@ -324,7 +311,6 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     return () => clearTimeout(timer);
   }, [purchases]);
 
-  // Play sound when a new purchase for the current game arrives
   useEffect(() => {
     const filtered = purchases.filter((p) => !selectedGameId || p.gameId === selectedGameId);
     if (filtered.length > prevCountRef.current && soundOn) {
@@ -338,14 +324,14 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
     : purchases;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h2 className="text-[22px] sm:text-[28px] font-bold text-white tracking-tight">Live Purchases</h2>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Live Purchases</h1>
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-[10px] font-semibold ${connected ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-              <Radio size={10} className={connected ? 'animate-pulse' : ''} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-[10px] font-semibold ${connected ? 'bg-status-success-bg text-status-success border border-status-success/20' : 'bg-status-danger-bg text-status-danger border border-status-danger/20'}`}>
+              <Radio size={10} className={connected ? 'animate-pulse-soft' : ''} />
               {connected ? 'LIVE' : 'DISCONNECTED'}
             </div>
             <button
@@ -357,13 +343,12 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
             </button>
           </div>
         </div>
-        <p className="text-text-secondary text-[13px] mt-1">Real-time purchase feed</p>
+        <p className="text-text-muted text-[13px] mt-1">Real-time purchase feed</p>
       </div>
 
       {/* Feed */}
       <div className="card overflow-hidden">
         <div className="relative z-10">
-          {/* Table header */}
           <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 px-6 md:px-7 py-3 border-b border-border">
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider" />
             <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Player</span>
@@ -374,7 +359,7 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
 
           {filteredPurchases.length === 0 ? (
             <div className="px-6 sm:px-7 py-16 text-center">
-              <Radio size={32} className="mx-auto text-text-muted mb-3 animate-pulse" />
+              <Radio size={28} className="mx-auto text-text-muted mb-3 animate-pulse-soft" />
               <p className="text-text-secondary text-[13px] font-medium">Waiting for purchases...</p>
               <p className="text-text-muted text-[11px] mt-1">Purchases will appear here in real time</p>
             </div>
@@ -391,19 +376,17 @@ export default function LivePurchasesPage({ selectedGameId }: Props) {
   );
 }
 
-/* ── Purchase Row ── */
 function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; currencyMode: 'robux' | 'usd' }) {
   return (
     <div
       className={`
         px-6 sm:px-7 py-3.5 transition-all duration-500 ease-out
         hover:bg-white/[0.02]
-        ${p.isNew ? 'bg-accent/[0.06] animate-fade-in' : ''}
+        ${p.isNew ? 'bg-accent/[0.04] animate-fade-in' : ''}
       `}
     >
       {/* Desktop layout */}
       <div className="hidden md:grid grid-cols-[48px_1fr_1fr_120px_100px] gap-4 items-center">
-        {/* Player avatar */}
         <div className="w-10 h-10 rounded-full bg-bg-elevated overflow-hidden border border-border shrink-0">
           {p.avatarUrl ? (
             <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -414,7 +397,6 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
           )}
         </div>
 
-        {/* Player name */}
         <div className="min-w-0">
           <p className="text-white text-[13px] font-medium truncate">
             {p.displayName || p.playerId}
@@ -424,7 +406,6 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
           )}
         </div>
 
-        {/* Product */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 shrink-0 rounded-btn bg-bg-elevated overflow-hidden border border-border">
             {p.productIconUrl ? (
@@ -445,12 +426,10 @@ function PurchaseRow({ purchase: p, currencyMode }: { purchase: LivePurchase; cu
           </div>
         </div>
 
-        {/* Price */}
         <p className="text-white text-[14px] font-semibold text-right tabular-nums">
           {formatCurrency(p.priceRobux, currencyMode)}
         </p>
 
-        {/* Time */}
         <p className="text-text-muted text-[11px] text-right">{timeAgo(p.timestamp)}</p>
       </div>
 

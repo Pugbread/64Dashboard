@@ -11,40 +11,36 @@
   }
 
   body {
-    background:
-      radial-gradient(1200px 700px at 65% -15%, rgba(59, 130, 246, 0.08), transparent 55%),
-      radial-gradient(900px 500px at 10% 120%, rgba(59, 130, 246, 0.05), transparent 60%),
-      #080808;
+    background: #09090b;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    color: #fff;
+    color: #f8fafc;
   }
 
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1E1E22; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #2A2A30; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
 
   ::selection { background: rgba(59, 130, 246, 0.3); color: #fff; }
 }
 
 @layer components {
   .card {
-    @apply bg-bg-card/95 rounded-card relative;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    @apply bg-bg-card rounded-card relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
-  /* Only apply backdrop-filter on desktop — it's a GPU killer on mobile */
   @media (min-width: 1024px) {
     .card {
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
     }
     .card::before {
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: 4px;
-      background: linear-gradient(145deg, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, transparent 40%);
       pointer-events: none;
     }
   }
@@ -53,13 +49,13 @@
     @apply transition-all duration-300 ease-out;
   }
   .card-hover:hover {
-    border-color: rgba(59, 130, 246, 0.22);
-    box-shadow: 0 12px 45px rgba(0, 0, 0, 0.55), 0 0 30px rgba(59, 130, 246, 0.08);
+    border-color: rgba(255, 255, 255, 0.10);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.06);
     transform: translateY(-1px);
   }
 
   .pill {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-semibold;
     border-radius: 20px;
   }
   .pill-success { @apply pill bg-status-success-bg text-status-success; }
@@ -67,22 +63,27 @@
 
   .btn-primary {
     @apply px-5 py-2.5 text-sm font-semibold text-white rounded-btn transition-all duration-200;
-    background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(59, 130, 246, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.10);
   }
   .btn-primary:hover {
-    box-shadow: 0 10px 26px rgba(59, 130, 246, 0.33), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(59, 130, 246, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     transform: translateY(-1px);
+    filter: brightness(1.05);
   }
-  .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2); }
+  .btn-primary:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15); }
 
   .input-field {
     @apply w-full bg-bg-elevated/80 border border-border rounded-btn px-4 py-3 text-white text-sm
-           focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20
-           placeholder-text-muted transition-colors;
+           focus:outline-none focus:border-accent/40 focus:ring-2 focus:ring-accent/10
+           placeholder-text-muted transition-all duration-200;
   }
 
   .category-label {
     @apply text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted;
+  }
+
+  .glass-border {
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 }

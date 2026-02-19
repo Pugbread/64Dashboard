@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getProviderStat } from '../api/client';
 import { ProviderMeta, TimeSeriesResult } from '../hooks/useStats';
 import TimeSeriesChart from './TimeSeriesChart';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, RotateCw } from 'lucide-react';
 
 interface LazyChartProps {
   gameId: string;
@@ -19,7 +19,6 @@ export default function LazyChart({ gameId, category, provider, range, interval 
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
-    // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -44,14 +43,13 @@ export default function LazyChart({ gameId, category, provider, range, interval 
     return () => { abortRef.current?.abort(); };
   }, [fetchData]);
 
-  // First load — no data yet, show skeleton
   if (loading && !result) {
     return (
-      <div className="card p-7 animate-pulse">
-        <div className="relative z-10">
-          <div className="h-3 w-28 bg-white/5 rounded mb-3" />
-          <div className="h-7 w-20 bg-white/5 rounded mb-6" />
-          <div className="h-44 bg-white/[0.02] rounded" />
+      <div className="card p-6">
+        <div className="relative z-10 animate-pulse">
+          <div className="h-3 w-24 bg-white/[0.04] rounded-btn mb-3" />
+          <div className="h-8 w-20 bg-white/[0.04] rounded-btn mb-5" />
+          <div className="h-44 bg-white/[0.02] rounded-btn" />
         </div>
       </div>
     );
@@ -59,17 +57,18 @@ export default function LazyChart({ gameId, category, provider, range, interval 
 
   if (error && !result) {
     return (
-      <div className="card p-7">
+      <div className="card p-6">
         <div className="relative z-10">
           <p className="text-text-muted text-[11px] font-semibold uppercase tracking-wider mb-2">{provider.name}</p>
-          <div className="flex items-center gap-2 text-status-danger/70 mt-4">
+          <div className="flex items-center gap-2 text-status-danger/80 mt-4">
             <AlertTriangle size={14} />
-            <span className="text-[12px]">Failed to load data</span>
+            <span className="text-[12px] font-medium">Failed to load data</span>
           </div>
           <button
             onClick={fetchData}
-            className="mt-3 text-[11px] text-accent hover:text-accent-light transition-colors"
+            className="mt-3 flex items-center gap-1.5 text-[11px] text-accent hover:text-accent-light transition-colors font-medium"
           >
+            <RotateCw size={11} />
             Retry
           </button>
         </div>
@@ -77,12 +76,11 @@ export default function LazyChart({ gameId, category, provider, range, interval 
     );
   }
 
-  // Show previous data while refetching (with a subtle loading indicator)
   return (
     <div className="relative">
       {loading && (
-        <div className="absolute top-3 right-3 z-20">
-          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+        <div className="absolute top-4 right-4 z-20">
+          <div className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
         </div>
       )}
       <TimeSeriesChart

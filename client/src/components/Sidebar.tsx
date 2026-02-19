@@ -14,9 +14,9 @@ interface SidebarProps {
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  engagement: <Users size={18} strokeWidth={1.5} />,
-  revenue: <DollarSign size={18} strokeWidth={1.5} />,
-  retention: <TrendingUp size={18} strokeWidth={1.5} />,
+  engagement: <Users size={17} strokeWidth={1.6} />,
+  revenue: <DollarSign size={17} strokeWidth={1.6} />,
+  retention: <TrendingUp size={17} strokeWidth={1.6} />,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -33,15 +33,15 @@ interface SubCategory {
 
 const SUBCATEGORIES: Record<string, SubCategory[]> = {
   revenue: [
-    { path: '/revenue', label: 'Overview', icon: <LayoutDashboard size={16} strokeWidth={1.5} /> },
-    { path: '/revenue/products', label: 'Products', icon: <Package size={16} strokeWidth={1.5} /> },
-    { path: '/revenue/spenders', label: 'Spenders', icon: <Crown size={16} strokeWidth={1.5} /> },
-    { path: '/revenue/live', label: 'Live', icon: <Radio size={16} strokeWidth={1.5} /> },
+    { path: '/revenue', label: 'Overview', icon: <LayoutDashboard size={15} strokeWidth={1.6} /> },
+    { path: '/revenue/products', label: 'Products', icon: <Package size={15} strokeWidth={1.6} /> },
+    { path: '/revenue/spenders', label: 'Spenders', icon: <Crown size={15} strokeWidth={1.6} /> },
+    { path: '/revenue/live', label: 'Live', icon: <Radio size={15} strokeWidth={1.6} /> },
   ],
 };
 
 function getCategoryIcon(cat: string) {
-  return CATEGORY_ICONS[cat] || <Layers size={18} strokeWidth={1.5} />;
+  return CATEGORY_ICONS[cat] || <Layers size={17} strokeWidth={1.6} />;
 }
 function getCategoryLabel(cat: string) {
   return CATEGORY_LABELS[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
@@ -51,9 +51,7 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
   const selectedGame = games.find((g) => g.id === selectedGameId);
   const location = useLocation();
 
-  // Track which expandable categories are open
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    // Auto-expand if we're already on a sub-route
     const initial: Record<string, boolean> = {};
     for (const cat of Object.keys(SUBCATEGORIES)) {
       if (location.pathname.startsWith(`/${cat}`)) {
@@ -68,37 +66,40 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
   };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3.5 py-2.5 rounded-btn text-[13px] transition-all duration-200 ${
+    `flex items-center gap-3 px-3 py-2 rounded-btn text-[13px] transition-all duration-200 group ${
       isActive
-        ? 'font-semibold text-white bg-gradient-active border border-accent/30 shadow-glow'
-        : 'font-medium text-text-secondary hover:text-white hover:bg-white/[0.04]'
+        ? 'font-semibold text-white bg-accent/[0.08] border border-accent/20'
+        : 'font-medium text-text-secondary hover:text-white hover:bg-white/[0.04] border border-transparent'
     }`;
 
   const subLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2.5 px-3.5 py-2 rounded-btn text-[12px] transition-all duration-200 ${
+    `flex items-center gap-2.5 px-3 py-1.5 rounded-btn text-[12px] transition-all duration-200 ${
       isActive
-        ? 'font-semibold text-white bg-accent/10 border border-accent/25'
+        ? 'font-semibold text-white bg-accent/[0.08]'
         : 'font-medium text-text-muted hover:text-text-secondary hover:bg-white/[0.03]'
     }`;
 
   return (
     <aside
       className={`
-        w-[240px] h-screen bg-bg-primary border-r border-border flex flex-col fixed left-0 top-0 z-[60] lg:bg-bg-primary/95 lg:backdrop-blur-md
+        w-[252px] h-screen bg-bg-primary/95 border-r border-border flex flex-col fixed left-0 top-0 z-[60]
+        lg:backdrop-blur-xl
         transition-transform duration-300 ease-out
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
       `}
     >
       {/* Logo */}
-      <div className="px-5 pt-6 pb-4 flex items-center justify-between border-b border-border/60">
+      <div className="px-5 pt-5 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-btn bg-gradient-accent flex items-center justify-center shadow-glow">
-            <BarChart3 size={16} className="text-white" />
+          <div className="w-8 h-8 rounded-[8px] bg-gradient-accent flex items-center justify-center shadow-glow">
+            <BarChart3 size={15} className="text-white" />
           </div>
-          <h1 className="text-[15px] font-bold text-white tracking-tight">64's Dash</h1>
+          <div>
+            <h1 className="text-[14px] font-bold text-white tracking-tight leading-none">64 Analytics</h1>
+            <p className="text-[10px] text-text-muted font-medium mt-0.5">Dashboard</p>
+          </div>
         </div>
-        {/* Mobile close button */}
         {onMobileClose && (
           <button
             onClick={onMobileClose}
@@ -110,24 +111,23 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
       </div>
 
       {/* Game selector */}
-      <div className="px-4 pb-5 pt-4">
-        <div className="bg-bg-card/90 border border-border rounded-card overflow-hidden shadow-card">
-          {/* Game icon — full width, no stretch */}
-          <div className="w-full aspect-square bg-bg-elevated">
+      <div className="px-4 pb-4 pt-2">
+        <div className="bg-bg-card rounded-card overflow-hidden border border-border">
+          <div className="w-full aspect-[2/1] bg-bg-elevated relative overflow-hidden">
             {selectedGame?.icon_url ? (
               <img src={selectedGame.icon_url} alt={selectedGame.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Gamepad2 size={28} className="text-text-muted" />
+                <Gamepad2 size={24} className="text-text-muted" />
               </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-bg-card/80 to-transparent" />
           </div>
-          {/* Dropdown */}
           <div className="relative p-2">
             <select
               value={selectedGameId || ''}
               onChange={(e) => onSelectGame(e.target.value)}
-              className="appearance-none w-full bg-bg-elevated/80 border border-border rounded-btn px-3 py-2 pr-8 text-white text-xs font-medium focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 cursor-pointer transition-colors text-center"
+              className="appearance-none w-full bg-bg-elevated/80 border border-border rounded-btn px-3 py-2 pr-8 text-white text-xs font-medium focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/10 cursor-pointer transition-all duration-200 text-center"
             >
               <option value="" disabled>Select game</option>
               {games.map((g) => (
@@ -139,40 +139,40 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-2 space-y-6 overflow-y-auto">
+      <div className="w-full h-px bg-border mx-0" />
+
+      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {/* MAIN */}
         <div>
-          <p className="category-label px-3 mb-3">Main</p>
-          <div className="space-y-1">
+          <p className="category-label px-3 mb-2">Analytics</p>
+          <div className="space-y-0.5">
             {categories.map((cat) => {
               const subs = SUBCATEGORIES[cat];
               const isOnCat = location.pathname.startsWith(`/${cat}`);
 
               if (subs) {
-                // Collapsible category with subcategories
                 const isExpanded = expanded[cat] || false;
                 return (
                   <div key={cat}>
                     <button
                       onClick={() => toggleExpand(cat)}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-btn text-[13px] transition-all duration-200 w-full ${
+                      className={`flex items-center gap-3 px-3 py-2 rounded-btn text-[13px] transition-all duration-200 w-full group ${
                         isOnCat
-                          ? 'font-semibold text-white bg-gradient-active border border-accent/30 shadow-glow'
-                          : 'font-medium text-text-secondary hover:text-white hover:bg-white/[0.04]'
+                          ? 'font-semibold text-white bg-accent/[0.08] border border-accent/20'
+                          : 'font-medium text-text-secondary hover:text-white hover:bg-white/[0.04] border border-transparent'
                       }`}
                     >
                       {getCategoryIcon(cat)}
                       <span className="flex-1 text-left">{getCategoryLabel(cat)}</span>
                       <ChevronRight
-                        size={14}
+                        size={13}
                         className={`text-text-muted transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                       />
                     </button>
-                    {/* Sub-items */}
                     <div
-                      className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? 'max-h-[200px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}
+                      className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? 'max-h-[200px] opacity-100 mt-0.5' : 'max-h-0 opacity-0'}`}
                     >
-                      <div className="ml-3 pl-3 border-l border-border/60 space-y-0.5">
+                      <div className="ml-4 pl-3 border-l border-border space-y-0.5 py-0.5">
                         {subs.map((sub) => (
                           <NavLink key={sub.path} to={sub.path} end className={subLinkClass}>
                             {sub.icon}
@@ -185,7 +185,6 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
                 );
               }
 
-              // Regular category link
               return (
                 <NavLink key={cat} to={`/${cat}`} className={linkClass}>
                   {getCategoryIcon(cat)}
@@ -194,9 +193,8 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
               );
             })}
 
-            {/* Users — standalone link */}
             <NavLink to="/users" className={linkClass}>
-              <UserSearch size={18} strokeWidth={1.5} />
+              <UserSearch size={17} strokeWidth={1.6} />
               Users
             </NavLink>
           </div>
@@ -204,10 +202,10 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
 
         {/* ACCOUNT */}
         <div>
-          <p className="category-label px-3 mb-3">Account</p>
-          <div className="space-y-1">
+          <p className="category-label px-3 mb-2">Account</p>
+          <div className="space-y-0.5">
             <NavLink to="/games" className={linkClass}>
-              <Gamepad2 size={18} strokeWidth={1.5} />
+              <Gamepad2 size={17} strokeWidth={1.6} />
               Games
             </NavLink>
           </div>
@@ -215,12 +213,12 @@ export default function Sidebar({ categories, games, selectedGameId, onSelectGam
       </nav>
 
       {/* Bottom */}
-      <div className="px-4 py-5 border-t border-border">
+      <div className="px-3 py-4 border-t border-border">
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-btn text-[13px] font-medium text-text-secondary hover:text-status-danger hover:bg-status-danger-bg transition-all duration-200 w-full"
+          className="flex items-center gap-3 px-3 py-2 rounded-btn text-[13px] font-medium text-text-secondary hover:text-status-danger hover:bg-status-danger-bg transition-all duration-200 w-full"
         >
-          <LogOut size={18} strokeWidth={1.5} />
+          <LogOut size={17} strokeWidth={1.6} />
           Logout
         </button>
       </div>

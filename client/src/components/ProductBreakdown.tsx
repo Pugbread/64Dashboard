@@ -30,21 +30,19 @@ const TOWER_GRADIENTS = [
 ];
 
 const TOWER_SHADOWS = [
-  '0 0 24px rgba(250,204,21,0.15)',
-  '0 0 16px rgba(203,213,225,0.08)',
-  '0 0 16px rgba(217,119,6,0.10)',
-  '0 0 12px rgba(59,130,246,0.10)',
-  '0 0 12px rgba(96,165,250,0.08)',
-  '0 0 10px rgba(99,102,241,0.08)',
-  '0 0 10px rgba(45,212,191,0.08)',
-  '0 0 10px rgba(168,85,247,0.08)',
-  '0 0 10px rgba(251,113,133,0.08)',
-  '0 0 10px rgba(52,211,153,0.08)',
+  '0 0 20px rgba(250,204,21,0.12)',
+  '0 0 14px rgba(203,213,225,0.06)',
+  '0 0 14px rgba(217,119,6,0.08)',
+  '0 0 10px rgba(59,130,246,0.08)',
+  '0 0 10px rgba(96,165,250,0.06)',
+  '0 0 8px rgba(99,102,241,0.06)',
+  '0 0 8px rgba(45,212,191,0.06)',
+  '0 0 8px rgba(168,85,247,0.06)',
+  '0 0 8px rgba(251,113,133,0.06)',
+  '0 0 8px rgba(52,211,153,0.06)',
 ];
 
 const RANK_LABELS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
-
-/* ─── Product towers ─── */
 
 const SORT_LABELS: Record<ProductSort, string> = {
   revenue: 'revenue',
@@ -83,19 +81,19 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
   const maxVal = Math.max(...top.map(getValue), 1);
 
   return (
-    <div className="card p-6 sm:p-7 flex-1 min-w-0">
+    <div className="card p-6 flex-1 min-w-0">
       <div className="relative z-10">
-        <div className="flex items-center gap-2.5 mb-2">
-          <Trophy size={16} className="text-yellow-400" />
-          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
+        <div className="flex items-center gap-2.5 mb-1">
+          <Trophy size={15} className="text-yellow-400" />
+          <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">
             Top {top.length} Products
           </p>
         </div>
-        <p className="text-text-muted text-[10px] mb-8">
+        <p className="text-text-muted text-[10px] mb-7">
           By {SORT_LABELS[sortField] || 'revenue'}
         </p>
 
-        <div className="overflow-x-auto -mx-6 sm:-mx-7 px-6 sm:px-7">
+        <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1 min-w-[300px]">
             {top.map((product, i) => {
               const val = getValue(product);
@@ -113,11 +111,11 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
                     )}
                   </div>
                   <div
-                    className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                    className={`w-full rounded-t-[4px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
                     style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
                   >
                     {i < 5 && (
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2">
                         <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
                       </div>
                     )}
@@ -140,8 +138,6 @@ export function ProductTowers({ products, sortField }: { products: ProductEntry[
   );
 }
 
-/* ─── Spender towers ─── */
-
 export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[]; sortField: SpenderSort }) {
   const { currencyMode } = useCurrencyMode();
   const top = spenders.slice(0, 10);
@@ -151,19 +147,19 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
   const maxVal = Math.max(...top.map(getValue), 1);
 
   return (
-    <div className="card p-6 sm:p-7 flex-1 min-w-0">
+    <div className="card p-6 flex-1 min-w-0">
       <div className="relative z-10">
-        <div className="flex items-center gap-2.5 mb-2">
-          <Crown size={16} className="text-yellow-400" />
-          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
+        <div className="flex items-center gap-2.5 mb-1">
+          <Crown size={15} className="text-yellow-400" />
+          <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">
             Top {top.length} Spenders
           </p>
         </div>
-        <p className="text-text-muted text-[10px] mb-8">
+        <p className="text-text-muted text-[10px] mb-7">
           By {sortField === 'spent' ? 'robux spent' : 'purchase count'}
         </p>
 
-        <div className="overflow-x-auto -mx-6 sm:-mx-7 px-6 sm:px-7">
+        <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex items-end justify-center gap-1 sm:gap-2 h-[200px] sm:h-[260px] px-1 min-w-[300px]">
             {top.map((spender, i) => {
               const val = getValue(spender);
@@ -181,11 +177,11 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
                     )}
                   </div>
                   <div
-                    className={`w-full rounded-t-[3px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
+                    className={`w-full rounded-t-[4px] bg-gradient-to-t ${TOWER_GRADIENTS[i] || TOWER_GRADIENTS[9]} transition-all duration-700 ease-out relative`}
                     style={{ height: `${heightPct}%`, boxShadow: TOWER_SHADOWS[i] || TOWER_SHADOWS[9] }}
                   >
                     {i < 5 && (
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+                      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2">
                         <span className="text-[8px] font-bold text-black/60">{RANK_LABELS[i]}</span>
                       </div>
                     )}
@@ -208,8 +204,6 @@ export function SpenderTowers({ spenders, sortField }: { spenders: SpenderEntry[
   );
 }
 
-/* ─── Pagination controls ─── */
-
 export function Pagination({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
@@ -221,7 +215,7 @@ export function Pagination({ page, totalPages, onPageChange }: { page: number; t
       >
         <ChevronLeft size={14} /> Prev
       </button>
-      <span className="text-[11px] text-text-muted">
+      <span className="text-[11px] text-text-muted tabular-nums">
         Page {page} of {totalPages}
       </span>
       <button
@@ -234,8 +228,6 @@ export function Pagination({ page, totalPages, onPageChange }: { page: number; t
     </div>
   );
 }
-
-/* ─── Product table ─── */
 
 function formatMinutes(mins: number | null): string {
   if (mins === null || mins === undefined) return '—';
@@ -278,10 +270,10 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
   return (
     <div className="card overflow-hidden">
       <div className="relative z-10">
-        <div className="px-6 sm:px-7 pt-6 sm:pt-7 pb-4">
+        <div className="px-6 sm:px-7 pt-5 pb-3">
           <div className="flex items-center gap-2.5">
-            <ShoppingBag size={16} className="text-accent" />
-            <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">All Products</p>
+            <ShoppingBag size={15} className="text-accent" />
+            <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">All Products</p>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -313,8 +305,8 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
                       {p.productType === 'gamepass' ? 'Gamepass' : 'DevProduct'}
                     </span>
                   </td>
-                  <td className="px-3 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(p.revenue, currencyMode)}>{formatRobux(p.revenue, currencyMode)}</span></td>
-                  <td className="px-3 py-3.5 text-right"><span className="text-text-secondary text-[13px] font-medium cursor-default" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span></td>
+                  <td className="px-3 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default tabular-nums" title={formatRobuxFull(p.revenue, currencyMode)}>{formatRobux(p.revenue, currencyMode)}</span></td>
+                  <td className="px-3 py-3.5 text-right"><span className="text-text-secondary text-[13px] font-medium cursor-default tabular-nums" title={p.sales.toLocaleString()}>{p.sales.toLocaleString()}</span></td>
                   <td className="px-3 py-3.5 text-right">
                     <span className="text-text-secondary text-[12px] font-medium cursor-default" title={formatMinutesFull(p.avgSessionMin)}>
                       {formatMinutes(p.avgSessionMin)}
@@ -327,7 +319,7 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
                   </td>
                   <td className="px-3 py-3.5 text-right pr-6 sm:pr-7">
                     {p.repeatSpenderRate !== null ? (
-                      <span className={`text-[12px] font-semibold cursor-default ${p.repeatSpenderRate >= 50 ? 'text-green-400' : p.repeatSpenderRate >= 25 ? 'text-yellow-400' : 'text-text-secondary'}`} title={`${p.repeatSpenderRate}% of buyers purchased again`}>
+                      <span className={`text-[12px] font-semibold cursor-default ${p.repeatSpenderRate >= 50 ? 'text-status-success' : p.repeatSpenderRate >= 25 ? 'text-yellow-400' : 'text-text-secondary'}`} title={`${p.repeatSpenderRate}% of buyers purchased again`}>
                         {p.repeatSpenderRate}%
                       </span>
                     ) : (
@@ -344,8 +336,6 @@ export function ProductTable({ products, sortField, sortDir, onSortChange, page,
     </div>
   );
 }
-
-/* ─── Spender table ─── */
 
 export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page, totalPages, onPageChange }: { spenders: SpenderEntry[]; sortField: SpenderSort; sortDir: SortDir; onSortChange: (f: SpenderSort) => void; page: number; totalPages: number; onPageChange: (p: number) => void }) {
   const { currencyMode } = useCurrencyMode();
@@ -374,10 +364,10 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
   return (
     <div className="card overflow-hidden">
       <div className="relative z-10">
-        <div className="px-6 sm:px-7 pt-6 sm:pt-7 pb-4">
+        <div className="px-6 sm:px-7 pt-5 pb-3">
           <div className="flex items-center gap-2.5">
-            <Crown size={16} className="text-accent" />
-            <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">All Spenders</p>
+            <Crown size={15} className="text-accent" />
+            <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">All Spenders</p>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -400,8 +390,8 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
                       <span className="text-white text-[13px] font-medium truncate">{s.displayName}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default" title={formatRobuxFull(s.spent, currencyMode)}>{formatRobux(s.spent, currencyMode)}</span></td>
-                  <td className="px-4 py-3.5 text-right pr-6 sm:pr-7"><span className="text-text-secondary text-[13px] font-medium cursor-default" title={s.purchases.toLocaleString()}>{s.purchases.toLocaleString()}</span></td>
+                  <td className="px-4 py-3.5 text-right"><span className="text-white text-[13px] font-semibold cursor-default tabular-nums" title={formatRobuxFull(s.spent, currencyMode)}>{formatRobux(s.spent, currencyMode)}</span></td>
+                  <td className="px-4 py-3.5 text-right pr-6 sm:pr-7"><span className="text-text-secondary text-[13px] font-medium cursor-default tabular-nums" title={s.purchases.toLocaleString()}>{s.purchases.toLocaleString()}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -412,8 +402,6 @@ export function SpenderTable({ spenders, sortField, sortDir, onSortChange, page,
     </div>
   );
 }
-
-/* ─── Product Flows ─── */
 
 const FLOW_RANK_COLORS = [
   'text-yellow-400',
@@ -426,12 +414,12 @@ const FLOW_RANK_COLORS = [
 export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: ProductFlow[]; totalNewBuyers: number; loading?: boolean }) {
   if (loading) {
     return (
-      <div className="card p-6 sm:p-7 animate-pulse">
+      <div className="card p-6 animate-pulse">
         <div className="relative z-10">
-          <div className="h-3 w-32 bg-white/5 rounded mb-4" />
+          <div className="h-3 w-28 bg-white/[0.04] rounded-btn mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-white/[0.02] rounded" />
+              <div key={i} className="h-12 bg-white/[0.02] rounded-btn" />
             ))}
           </div>
         </div>
@@ -442,19 +430,19 @@ export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: Produc
   if (flows.length === 0) return null;
 
   return (
-    <div className="card p-6 sm:p-7">
+    <div className="card p-6">
       <div className="relative z-10">
         <div className="flex items-center gap-2.5 mb-1">
-          <GitBranch size={16} className="text-accent" />
-          <p className="text-[12px] text-text-secondary font-medium uppercase tracking-wider">
+          <GitBranch size={15} className="text-accent" />
+          <p className="text-[11px] text-text-muted font-semibold uppercase tracking-wider">
             Purchase Flows
           </p>
         </div>
-        <p className="text-text-muted text-[10px] mb-6">
+        <p className="text-text-muted text-[10px] mb-5">
           Top {flows.length} most common purchase sequences for new buyers
         </p>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {flows.map((flow, idx) => {
             const pct = totalNewBuyers > 0 ? Math.round((flow.count / totalNewBuyers) * 1000) / 10 : 0;
             return (
@@ -462,12 +450,10 @@ export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: Produc
                 key={idx}
                 className="flex items-center gap-3 px-4 py-3 rounded-btn bg-white/[0.02] border border-border/50 hover:border-border transition-colors"
               >
-                {/* Rank */}
                 <span className={`text-[13px] font-bold w-5 shrink-0 ${FLOW_RANK_COLORS[idx] || 'text-text-muted'}`}>
                   {idx + 1}
                 </span>
 
-                {/* Chain */}
                 <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
                   {flow.products.map((product, pIdx) => (
                     <div key={pIdx} className="flex items-center gap-1.5 shrink-0">
@@ -488,7 +474,6 @@ export function ProductFlows({ flows, totalNewBuyers, loading }: { flows: Produc
                   ))}
                 </div>
 
-                {/* Count + percentage */}
                 <div className="flex items-center gap-2 shrink-0 ml-2">
                   <span className="text-white text-[12px] font-semibold tabular-nums">
                     {flow.count.toLocaleString()}

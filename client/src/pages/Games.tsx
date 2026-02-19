@@ -8,11 +8,11 @@ export default function Games() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Games</h1>
-          <p className="text-text-secondary text-[13px] mt-1">Manage tracked Roblox games</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Games</h1>
+          <p className="text-text-muted text-[13px] mt-1">Manage tracked Roblox games</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 w-fit">
           <Plus size={14} />
@@ -21,24 +21,24 @@ export default function Games() {
       </div>
 
       {loading ? (
-        <div className="text-text-secondary text-sm py-16 text-center">Loading games...</div>
+        <div className="text-text-muted text-sm py-16 text-center">Loading games...</div>
       ) : games.length === 0 ? (
         <div className="card p-16 text-center">
           <div className="relative z-10">
-            <Gamepad2 size={40} className="mx-auto mb-4 text-text-muted" />
+            <Gamepad2 size={36} className="mx-auto mb-4 text-text-muted" />
             <p className="text-text-secondary text-sm font-medium">No games added yet</p>
             <p className="text-text-muted text-xs mt-1.5">Click "Add Game" to get started</p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {games.map((game) => (
             <div key={game.id} className="card card-hover p-5 flex items-center gap-4">
               <div className="relative z-10 flex items-center gap-4 w-full">
                 {game.icon_url ? (
                   <img src={game.icon_url} alt={game.name} className="w-12 h-12 rounded-btn object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-btn bg-bg-elevated flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-btn bg-bg-elevated flex items-center justify-center border border-border">
                     <Gamepad2 size={20} className="text-text-muted" />
                   </div>
                 )}
